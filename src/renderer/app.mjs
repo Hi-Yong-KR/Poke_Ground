@@ -454,6 +454,56 @@ async function startVoice() {
   voice.start(extra);
 }
 
+// ---- 입력/출력 장치 선택 ----
+// deviceId는 실행마다 바뀌는 로컬 서버 주소(origin)에 묶여 있어서, 장치 이름으로 저장하고 실행할 때 id를 다시 찾는다
+function fillDevices(sel, devs, savedLabel) {
+  const el = $(sel);
+  el.innerHTML = '';
+  el.append(new Option('Windows 기본 장치', ''));
+  devs.filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications')
+    .forEach((d, i) => el.append(new Option(d.label || `장치 ${i + 1}`, d.deviceId)));
+  const match = [...el.options].find((o) => o.value && o.text === savedLabel);
+  el.value = match ? match.value : '';
+}
+
+async function refreshDevices() {
+  let list = [];
+  try { list = await navigator.mediaDevices.enumerateDevices(); } catch { /* 장치 조회 불가 */ }
+  fillDevices('#mic-sel', list.filter((d) => d.kind === 'audioinput'), app.config.micLabel);
+  fillDevices('#spk-sel', list.filter((d) => d.kind === 'audiooutput'), app.config.speakerLabel);
+  app.speakerId = $('#spk-sel').value;
+  return $('#mic-sel').value;
+}
+navigator.mediaDevices.addEventListener('devicechange', refreshDevices);
+
+function testCry() {
+  const m = (app.focus && !app.focus.hidden) ? app.focus : app.mons.find((x) => !x.hidden);
+  if (m) { m.playCry('Happy', { force: true }); app.fx.emote('notes', m.center.x, m.center.y - 30); }
+}
+
+$('#dev-btn').addEventListener('click', () => {
+  const box = $('#devices');
+  box.hidden = !box.hidden;
+  $('#dev-btn').classList.toggle('on', !box.hidden);
+  if (!box.hidden) refreshDevices();
+});
+$('#mic-sel').addEventListener('change', (e) => {
+  const o = e.target.selectedOptions[0];
+  app.config.micLabel = o.value ? o.text : '';
+  poke.setConfig({ micLabel: app.config.micLabel });
+  app.log(`🎤 입력 장치: ${o.text}`, 'sys');
+  voice.setDevice(o.value);
+});
+$('#spk-sel').addEventListener('change', (e) => {
+  const o = e.target.selectedOptions[0];
+  app.speakerId = o.value;
+  app.config.speakerLabel = o.value ? o.text : '';
+  poke.setConfig({ speakerLabel: app.config.speakerLabel });
+  app.log(`🔊 출력 장치: ${o.text}`, 'sys');
+  testCry();
+});
+$('#spk-test').addEventListener('click', testCry);
+
 // ---- 종료 / 메뉴 ----
 function quitApp() {
   app.log('모두 몬스터볼로 돌아가는 중... 안녕! 👋', 'sys');
@@ -496,6 +546,7 @@ function frame(now) {
   for (const m of app.mons) { m.update(dt); m.render(); }
   app.fx.update(dt);
   app.fx.draw();
+  if (!$('#devices').hidden) $('#meter-bar').style.width = `${Math.round(voice.level() * 100)}%`;
   requestAnimationFrame(frame);
 }
 
@@ -504,6 +555,7 @@ function frame(now) {
   for (const k of app.config.party) await ensureMon(k);
   app.log('포켓몬을 클릭·드래그·쓰다듬어 보세요! 명령 예) "피카츄 크롬 10만볼트"', 'sys');
   requestAnimationFrame(frame);
+  voice.deviceId = await refreshDevices();
   if (app.config.voice) startVoice();
   else voice.stop();
   Object.assign(window, { app, handleCommand, voice });   // 개발자 도구에서 확인용

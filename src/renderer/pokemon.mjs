@@ -154,16 +154,19 @@ export class Mon {
   }
 
   /** 울음소리 재생. 감정에 따라 높낮이를 바꿔 기쁘면 높게, 슬프면 낮게 운다 */
-  playCry(emotion = 'Normal') {
-    if (!this.app.config.sound) return;
+  playCry(emotion = 'Normal', { force = false } = {}) {
+    if (!this.app.config.sound && !force) return;
     const now = performance.now();
-    if (now - (this.lastCry || 0) < 700) return;   // 연달아 겹쳐 울지 않게
+    if (now - (this.lastCry || 0) < 700 && !force) return;   // 연달아 겹쳐 울지 않게
     this.lastCry = now;
     const a = new Audio(`${this.sp.base}cry.ogg`);
     a.preservesPitch = false;
     a.playbackRate = CRY_PITCH[emotion] ?? 1;
     a.volume = 0.55;
-    a.play().catch(() => { /* 울음소리 파일이 없으면 조용히 넘어감 */ });
+    const sink = this.app.speakerId;   // 장치 설정에서 고른 출력 장치
+    (sink && a.setSinkId ? a.setSinkId(sink).catch(() => {}) : Promise.resolve())
+      .then(() => a.play())
+      .catch(() => { /* 울음소리 파일이 없으면 조용히 넘어감 */ });
   }
 
   /** 리액션 실행: 애니메이션 + 감정 파티클 + 요약 텍스트 */

@@ -46,8 +46,16 @@ export class Voice {
       }
 
       let stream;
+      const audio = { echoCancellation: true, noiseSuppression: true, channelCount: 1 };
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: this.deviceId ? { ...audio, deviceId: { exact: this.deviceId } } : audio });
+        } catch (e) {
+          if (!this.deviceId) throw e;
+          // 고른 마이크가 사라졌으면 기본 마이크로 대신 연결
+          stream = await navigator.mediaDevices.getUserMedia({ audio });
+          console.warn('[voice] 선택한 마이크를 못 찾아 기본 마이크 사용', e.name);
+        }
       } catch (e) {
         const why = this.diagnose ? await this.diagnose().catch(() => null) : null;
         this.scheduleRetry();
@@ -79,6 +87,11 @@ export class Voice {
       };
       src.connect(node);
       node.connect(ctx.destination);
+      const analyser = ctx.createAnalyser();   // 장치 설정의 입력 음량 표시용
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      this.analyser = analyser;
+      this.levelBuf = new Float32Array(analyser.fftSize);
       // 마이크를 뽑거나 다시 막으면 재연결 대기로 전환
       stream.getAudioTracks().forEach((t) => t.addEventListener('ended', () => this.lost()));
       Object.assign(this, { ctx, rec, stream, node, ready: true });
@@ -92,11 +105,39 @@ export class Voice {
     }
   }
 
+  /** 현재 입력 음량 0~1 (연결 안 됐으면 0) */
+  level() {
+    if (!this.ready || !this.analyser) return 0;
+    this.analyser.getFloatTimeDomainData(this.levelBuf);
+    let peak = 0;
+    for (const v of this.levelBuf) peak = Math.max(peak, Math.abs(v));
+    return Math.min(1, peak * 2);
+  }
+
+  /** 지금 쓰는 마이크 이름 */
+  get deviceLabel() { return this.ready ? this.stream.getAudioTracks()[0]?.label || '' : ''; }
+
+  /** 입력 장치 변경 (빈 값이면 Windows 기본 장치) */
+  setDevice(deviceId) {
+    if (deviceId === (this.deviceId || '')) return;
+    this.deviceId = deviceId || '';
+    this.teardown();
+    if (this.enabled) this.start();
+  }
+
+  teardown() {
+    if (!this.ready) return;
+    try {
+      this.stream.getTracks().forEach((t) => t.stop());
+      this.node.disconnect(); this.rec.remove(); this.ctx.close();
+    } catch { /* 이미 정리됨 */ }
+    this.ready = false;
+  }
+
   /** 마이크 사용 중 연결이 끊긴 경우 */
   lost() {
     if (!this.ready) return;
-    try { this.node.disconnect(); this.rec.remove(); this.ctx.close(); } catch { /* 이미 정리됨 */ }
-    this.ready = false;
+    this.teardown();
     if (this.enabled) { this.onStatus('off', '마이크 연결이 끊겼어요 — 다시 연결을 기다리는 중'); this.scheduleRetry(); }
   }
 
