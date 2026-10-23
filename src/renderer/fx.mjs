@@ -25,6 +25,10 @@ const TYPE_COLORS = {
   rock: ['#e8d8b0', '#c9a86a', '#8d7348'],
 };
 
+// 파티클 수 상한: 980마리가 저마다 감정 표현을 하면 수천 개가 쌓여 화면이 초당 몇 프레임으로 떨어진다(측정)
+const MAX_PARTS = 1200;
+const EMOTE_PARTS = 300;
+
 export class FX {
   constructor(canvas) {
     this.canvas = canvas;
@@ -47,6 +51,7 @@ export class FX {
   get busy() { return this.parts.length > 0 || this.effects.length > 0 || this.flash > 0; }
 
   spawn(p) {
+    if (this.parts.length >= MAX_PARTS) return;   // 수백 마리가 나와 있어도 그리기가 밀리지 않게
     this.parts.push({ vx: 0, vy: 0, ax: 0, ay: 0, drag: 0, t: 0, life: 1, size: 6, rot: 0, vr: 0, shape: 'dot', glow: false, alpha: 1, grow: 0, ...p });
   }
 
@@ -128,7 +133,8 @@ export class FX {
 
   // ---------- 감정 표현 파티클 ----------
   emote(kind, x, y, type = 'normal') {
-    const up = (text, n = 3, opts = {}) => {
+    if (this.parts.length >= EMOTE_PARTS) return;   // 감정 표현은 장식이라 먼저 줄이고, 기술 연출에 자리를 남긴다
+    const up =(text, n = 3, opts = {}) => {
       for (let i = 0; i < n; i++) {
         this.spawn({ shape: 'text', text: typeof text === 'function' ? text(i) : text, x: x + rand(-28, 28), y: y + rand(-10, 10),
           vx: rand(-15, 15), vy: rand(-70, -40), size: rand(18, 26), life: rand(1.2, 1.8), fadeIn: 0.15, t: -i * 0.15, ...opts });

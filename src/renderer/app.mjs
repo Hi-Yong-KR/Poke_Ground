@@ -1,6 +1,6 @@
 // 렌더러 진입점: 포켓몬 관리, 마우스 상호작용, 명령 실행, 음성/텍스트 입력
 import { FX } from './fx.mjs';
-import { Mon, loadSpecies } from './pokemon.mjs';
+import { Mon, loadSpecies, CRY_VOLUME } from './pokemon.mjs';
 import { Voice } from './speech.mjs';
 import { parseCommand, resolveTarget, aliasTaken } from '../shared/parser.mjs';
 import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, HIT_TEXT, SUPER, WEAK } from '../shared/data.mjs';
@@ -34,6 +34,8 @@ addEventListener('resize', () => { app.w = innerWidth; app.h = innerHeight; });
 app.blocked = () => ($('#bar').classList.contains('collapsed') ? $('#ball') : $('#bar')).getBoundingClientRect();
 
 // ---------- 포켓몬 등장/퇴장 ----------
+let bulk = false;   // 여러 마리를 한꺼번에 내보내거나(시작할 때) 들여보내는(전부 들여보내기) 중: 한 마리마다 저장·다시 그리기·기록을 하지 않는다
+
 async function ensureMon(key, { announce = true } = {}) {
   let m = app.mons.find((x) => x.key === key);
   if (!m) {
@@ -50,11 +52,33 @@ async function ensureMon(key, { announce = true } = {}) {
     if (announce) m.react('greet', { text: '몬스터볼에서 힘차게 튀어나왔다! 반갑다는 뜻 같다' });
     if (!app.config.party.includes(key)) {
       app.config.party = [...app.config.party, key];
-      poke.setConfig({ party: app.config.party });
-      renderParty();   // 음성·텍스트 명령으로 불러내도 파티 창이 따라간다
+      if (!bulk) {
+        poke.setConfig({ party: app.config.party });
+        renderParty();   // 음성·텍스트 명령으로 불러내도 파티 창이 따라간다
+      }
     }
   }
   return m;
+}
+
+/**
+ * 여러 마리를 한꺼번에 내보낸다: 그림은 8마리씩 함께 불러오고 불러온 것부터 나온다. 인사·설정 저장·파티 창 다시 그리기는
+ * 한 마리마다 하지 않는다(부른 쪽이 끝에 한 번). 나온 수를 돌려준다
+ */
+async function summonMany(keys, onProgress = () => {}) {
+  const was = bulk;
+  bulk = true;
+  let next = 0, count = 0;
+  const worker = async () => {
+    while (next < keys.length) {
+      const k = keys[next++];
+      try { await ensureMon(k, { announce: false }); count++; } catch (e) { console.warn('[summon]', k, e.message); }
+      onProgress(count, keys.length);
+    }
+  };
+  await Promise.all(Array.from({ length: 8 }, worker));
+  bulk = was;
+  return count;
 }
 
 function pokeballPop(m) {
@@ -72,11 +96,13 @@ function returnToBall(m, { save = true } = {}) {
   m.hidden = true;
   m.mode = 'ball';
   m.bubble.classList.remove('show');
-  app.log(`${m.name}: 몬스터볼로 돌아갔다`, 'sys');
+  if (!bulk) app.log(`${m.name}: 몬스터볼로 돌아갔다`, 'sys');
   if (save) {
     app.config.party = app.config.party.filter((k) => k !== m.key);
-    poke.setConfig({ party: app.config.party });
-    renderParty();
+    if (!bulk) {
+      poke.setConfig({ party: app.config.party });
+      renderParty();
+    }
   }
 }
 
@@ -491,7 +517,7 @@ function openPanel(name, open = $(PANELS[name][0]).hidden) {
 }
 
 $('#dev-btn').addEventListener('click', () => {
-  if (openPanel('dev')) { refreshDevices(); refreshSttInfo(); }
+  if (openPanel('dev')) { refreshDevices(); refreshSttInfo(); showVolume(); }
 });
 $('#mic-sel').addEventListener('change', (e) => {
   const o = e.target.selectedOptions[0];
@@ -509,6 +535,21 @@ $('#spk-sel').addEventListener('change', (e) => {
   testCry();
 });
 $('#spk-test').addEventListener('click', testCry);
+
+// ---- 울음소리 볼륨 (config.volume 0~1) — 끌면 바로 바뀌고, 손을 떼면 저장하고 한 번 울려 본다 ----
+const showVolume = () => {
+  const v = Math.round((app.config.volume ?? CRY_VOLUME) * 100);
+  $('#vol').value = v;
+  $('#vol-val').textContent = `${v}%`;
+};
+$('#vol').addEventListener('input', (e) => {
+  app.config.volume = e.target.value / 100;
+  $('#vol-val').textContent = `${e.target.value}%`;
+});
+$('#vol').addEventListener('change', () => {
+  poke.setConfig({ volume: app.config.volume });
+  testCry();
+});
 
 // ---- 지금 쓰는 음성인식 엔진 표시 ----
 async function refreshSttInfo() {
@@ -601,15 +642,19 @@ async function downloadDex(e, button) {
 
 /** 도감 번호로 포켓몬을 내보낸다. 처음 부르는 포켓몬은 config.custom 에 등록해 이름으로도 부를 수 있게 한다 */
 async function addDex(dex, { announce = true } = {}) {
-  const key = builtinKeyOf(dex) || customKey(dex);
-  if (!POKEMON[key]) {
-    app.config.custom = [...new Set([...(app.config.custom || []), dex])];
-    applyCustom(app.config.custom, app.config.creations);
-    poke.setConfig({ custom: app.config.custom });
-    voice.refreshWords();
-  }
-  await ensureMon(key, { announce });   // 바로 화면에 등장하고 파티에도 들어간다
+  registerDex([dex]);
+  await ensureMon(builtinKeyOf(dex) || customKey(dex), { announce });   // 바로 화면에 등장하고 파티에도 들어간다
   renderDex();
+}
+
+/** 아직 등록 안 된 도감 포켓몬을 등록한다 (여러 마리면 한 번에: 별칭 표·음성 단어를 한 번만 다시 만든다) */
+function registerDex(list) {
+  const add = list.filter((d) => !builtinKeyOf(d) && !POKEMON[customKey(d)]);
+  if (!add.length) return;
+  app.config.custom = [...new Set([...(app.config.custom || []), ...add])];
+  applyCustom(app.config.custom, app.config.creations);
+  poke.setConfig({ custom: app.config.custom });
+  voice.refreshWords();
 }
 
 /** 화면에서 지우고 파티에서 뺀다 (직접 넣은 포켓몬을 지울 때) */
@@ -696,8 +741,6 @@ $('#dex-btn').addEventListener('click', () => {
 
 // ---- 파티: 화면에 내보낼 포켓몬을 한 창에서 여러 마리 바로 켜고 끈다 (트레이 메뉴는 누를 때마다 닫혀서 불편했다) ----
 const portraitOf = (k) => `${POKEMON[k].assets || `/assets/pokemon/${k}/`}portrait/Normal.png`;
-let partyBusy = false;
-const PARTY_ALL_MAX = 30;   // 전부 내보내기는 이만큼까지 (천 마리를 한꺼번에 내보내면 화면이 멈춘다)
 
 /**
  * 파티 창에 보일 포켓몬 — 그림이 있는 모든 포켓몬을 구분 없이 도감 번호순으로 (번호 없는 내 그림은 맨 뒤).
@@ -720,7 +763,7 @@ function partyEntries(q) {
 }
 
 function renderParty() {
-  if ($('#party').hidden) return;
+  if ($('#party').hidden || bulk) return;
   const q = $('#party-q').value.trim().toLowerCase();
   const list = partyEntries(q);
   $('#party-grid').replaceChildren(...list.map((p) => {
@@ -730,9 +773,6 @@ function renderParty() {
     return tile;
   }));
   $('#party-count').textContent = `${app.config.party.length}/${q ? list.length : partyEntries('').length}`;
-  $('#party-none').disabled = partyBusy;
-  $('#party-all').disabled = partyBusy || list.length > PARTY_ALL_MAX;
-  $('#party-all').title = list.length > PARTY_ALL_MAX ? `검색해서 ${PARTY_ALL_MAX}마리 이하로 줄이면 한꺼번에 내보낼 수 있어요` : '목록의 포켓몬을 모두 화면에 내보내기';
 }
 
 function partyTile(label, src, on, hint) {
@@ -761,23 +801,20 @@ async function toggleParty(p, tile) {
   renderParty();
 }
 
-/** 목록(검색 중이면 검색 결과)의 포켓몬을 모두 내보내거나 들여보낸다 */
-async function partyAll(on) {
-  const list = partyEntries($('#party-q').value.trim().toLowerCase());
-  if (on && list.length > PARTY_ALL_MAX) return;
-  partyBusy = true;
+/**
+ * 목록(검색 중이면 검색 결과)에서 화면에 나와 있는 포켓몬을 모두 들여보낸다.
+ * 한꺼번에 처리하는 동안(bulk)은 한 마리마다 설정 저장·파티 창 다시 그리기·기록을 하지 않고 끝에 한 번만 한다
+ */
+function partyNone() {
+  const keys = new Set(partyEntries($('#party-q').value.trim().toLowerCase()).map((p) => p.key));
+  bulk = true;
+  let count = 0;
+  for (const m of app.mons) if (keys.has(m.key) && !m.hidden) { returnToBall(m); count++; }
+  bulk = false;
+  poke.setConfig({ party: app.config.party });
+  if (count) app.log(`🎒 ${count}마리가 몬스터볼로 돌아갔다`, 'sys');
   renderParty();
-  if (on) {
-    for (const p of list) {
-      if (!p.key) await addDex(p.dex, { announce: false });
-      else if (!app.config.party.includes(p.key)) await ensureMon(p.key, { announce: false });
-    }
-  } else {
-    const keys = new Set(list.map((p) => p.key));
-    for (const m of app.mons) if (keys.has(m.key) && !m.hidden) returnToBall(m);
-  }
-  partyBusy = false;
-  renderParty();
+  renderDex();
 }
 
 $('#party-btn').addEventListener('click', () => {
@@ -785,8 +822,7 @@ $('#party-btn').addEventListener('click', () => {
 });
 dexAvailable().then(renderParty);
 $('#party-q').addEventListener('input', renderParty);
-$('#party-all').addEventListener('click', () => partyAll(true));
-$('#party-none').addEventListener('click', () => partyAll(false));
+$('#party-none').addEventListener('click', partyNone);
 $('#dex-q').addEventListener('input', renderDex);
 
 // ---- 종료 / 메뉴 ----
@@ -842,11 +878,15 @@ function frame(now) {
   app.config = await poke.getConfig();
   applyCustom(app.config.custom, app.config.creations);   // 도감에서 추가한 포켓몬, 직접 그림을 넣은 포켓몬
   app.config.party = app.config.party.filter((k) => POKEMON[k]);
-  for (const k of app.config.party) await ensureMon(k);
-  app.log('포켓몬을 클릭·드래그·쓰다듬어 보세요! 명령 예) "피카츄 크롬 10만볼트"', 'sys');
+  Object.assign(window, { app, handleCommand, voice });   // 개발자 도구에서 확인용
   requestAnimationFrame(frame);
+  // 파티가 많으면 하나씩 인사하지 않고 함께 불러온 뒤 한 줄로 알린다. 그동안 음성인식도 준비한다
+  const party = [...app.config.party];
+  const loading = party.length <= 5 ? (async () => { for (const k of party) await ensureMon(k); })()
+    : summonMany(party).then((n) => app.log(`🎒 ${n}마리가 몬스터볼에서 나왔다!`, 'sys'));
   voice.deviceId = await refreshDevices();
   if (app.config.voice) startVoice();
   else voice.stop();
-  Object.assign(window, { app, handleCommand, voice });   // 개발자 도구에서 확인용
+  await loading;
+  app.log('포켓몬을 클릭·드래그·쓰다듬어 보세요! 명령 예) "피카츄 크롬 10만볼트"', 'sys');
 })();

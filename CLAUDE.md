@@ -26,7 +26,7 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
   - 작업 영역 크기의 투명·항상 위 오버레이 창 하나. 평소엔 `setIgnoreMouseEvents(true, {forward:true})`로 클릭이 뒤로 통과하고, 렌더러가 마우스가 `.interactive` 요소(포켓몬 히트박스, 명령창) 위에 있을 때만 IPC `mouse-through`로 통과를 끈다.
   - 음성인식: `whisper.js`가 `.venv`의 파이썬으로 `whisper_worker.py`(Faster-Whisper small, `device='cpu'`, `compute_type='int8'`, 최대 4스레드)를 상주시키고, stdin/stdout JSON 한 줄(PCM은 base64)로 발화 하나씩 받아쓴다. 앱 시작 때 미리 띄워 모델을 올려 둔다. IPC `stt-info`/`stt-hotwords`/`stt-transcribe`.
   - 렌더러를 `http://127.0.0.1:<임의 포트>`의 내장 정적 서버로 띄운다 (마이크 보안 컨텍스트, Vosk 모델 fetch 때문). `node_modules`는 `vosk-browser`만 노출.
-  - 트레이 메뉴는 명령창 열기·음성인식·울음소리·개발자 도구·종료뿐이다(포켓몬 고르기는 명령창의 🎒 파티 한 곳). 설정은 `userData/config.json` (`party` — 첫 실행은 피카츄만, `voice`, `sound`, `micLabel`, `speakerLabel`).
+  - 트레이 메뉴는 명령창 열기·음성인식·울음소리·개발자 도구·종료뿐이다(포켓몬 고르기는 명령창의 🎒 파티 한 곳). 설정은 `userData/config.json` (`party` — 첫 실행은 피카츄만, `voice`, `sound`, `micLabel`, `speakerLabel`, `volume` — 울음소리 0~1, 없으면 0.55).
   - 화면 객체 인식: 상주 PowerShell `scanner.ps1`(+ `scanner.cs` Add-Type)에 stdin으로 `scan`을 보내면 JSON 한 줄로 창(EnumWindows+DWM 프레임)과 바탕화면 아이콘(SysListView32를 원격 메모리로 조회)을 돌려준다. 좌표는 물리 픽셀 → main에서 `screenToDipRect`로 DIP·오버레이 기준으로 변환.
   - 울음소리: 게임 원음이라 저장소·배포판에 넣지 않고, 창이 뜬 뒤 `fetchCries()`가 `src/main/cries.mjs`로 전국도감 전부(`pokedex.mjs`)를 PokeAPI cries에서 `userData/cries/<번호>.ogg`로 받는다(없는 것만, 8개씩 병렬, 인터넷이 없으면 일찍 그만두고 다음 실행 때 다시). 정적 서버가 `/cries/`로 내고, `Mon.playCry`는 `/cries/<dex>.ogg` → 앱에 든 `assets/pokemon/<key>/cry.ogg` 순으로 시도한다. 시작·끝은 IPC 이벤트 `cries`로 명령창 기록에 남긴다.
   - 마이크 진단(`mic-diagnose`)은 장치 상태와 Windows 개인정보 레지스트리를 **읽기만** 한다.

@@ -197,8 +197,9 @@ export function acceptVoice(text, words = null) {
 /** Whisper 인식 힌트(hotwords): 포켓몬·기술 이름 등 대표 단어 하나씩 (한글만, 최대 100개) */
 export function voiceKeywords() {
   const first = (list) => list.map(compact).find((a) => /^[가-힣]{2,20}$/.test(a));
+  // 포켓몬 이름은 40개까지: 전부 내보내기로 980마리가 등록돼도 기술·행동 단어가 100개 한도에서 밀려나지 않게
   return [
-    ...Object.values(POKEMON).map((p) => first(p.aliases)),
+    ...Object.values(POKEMON).map((p) => first(p.aliases)).filter(Boolean).slice(0, 40),
     first(ALL_ALIASES), first(ATTACK_WORDS),
     ...Object.values(MOVES).map((m) => first(m.aliases)),
     ...Object.values(ACTIONS).map(first),

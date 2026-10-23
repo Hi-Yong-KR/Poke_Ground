@@ -11,8 +11,9 @@ const CRY_PITCH = {
   Sad: 0.86, Crying: 0.82, 'Teary-Eyed': 0.88, Pain: 0.9, Sigh: 0.85, Dizzy: 0.88, Worried: 0.95,
   Angry: 0.94, Shouting: 1.0, Determined: 1.0,
 };
-// 여러 마리가 한꺼번에 반응해도(모두 나와, 전부 내보내기) 울음소리가 쏟아지지 않게: 동시에 2마리까지, 시작 간격 0.4초.
+// 여러 마리가 한꺼번에 반응해도(모두 점프, 시작할 때 파티 등장) 울음소리가 쏟아지지 않게: 동시에 2마리까지, 시작 간격 0.4초.
 // 못 운 포켓몬도 말풍선·글자는 그대로 보인다
+export const CRY_VOLUME = 0.55;   // 볼륨 기본값 (⚙ 장치에서 바꾸면 config.volume)
 const CRY_MAX_AT_ONCE = 2;
 const CRY_GAP_MS = 400;
 const cryGate = { playing: 0, last: 0 };
@@ -88,11 +89,14 @@ export class Mon {
     const a = this.sp.anims[name];
     if (this.anim && this.anim.name === name && loop && this.anim.loop) return name;
     this.anim = { name, a, frame: 0, t: 0, loop, onEnd, speed };
+    // 시트는 원래 크기로 그리고 transform으로 키운다: background-size로 키우면 브라우저가 3배 크기로 디코딩한 그림을
+    // 마리마다 따로 들고 있어, 400마리쯤부터 그림 캐시가 넘쳐 초당 몇 프레임으로 떨어졌다(측정)
     Object.assign(this.sprite.style, {
-      width: a.w * this.S + 'px', height: a.h * this.S + 'px',
+      width: a.w + 'px', height: a.h + 'px',
       backgroundImage: `url("${a.url}")`,
-      backgroundSize: `${a.sheetW * this.S}px ${a.sheetH * this.S}px`,
+      backgroundSize: `${a.sheetW}px ${a.sheetH}px`,
     });
+    if (!this.def.simple) this.sprite.style.transform = `translate(-50%, -50%) scale(${this.S})`;
     return name;
   }
 
@@ -165,7 +169,7 @@ export class Mon {
 
   /** 울음소리 재생. 감정에 따라 높낮이를 바꿔 기쁘면 높게, 슬프면 낮게 운다 */
   playCry(emotion = 'Normal', { force = false } = {}) {
-    if (!this.app.config.sound && !force) return;
+    if ((!this.app.config.sound || this.app.config.volume === 0) && !force) return;
     const now = performance.now();
     if (now - (this.lastCry || 0) < 700 && !force) return;   // 연달아 겹쳐 울지 않게
     if (!force && (cryGate.playing >= CRY_MAX_AT_ONCE || now - cryGate.last < CRY_GAP_MS)) return;
@@ -179,7 +183,7 @@ export class Mon {
       const a = new Audio(srcs[i]);
       a.preservesPitch = false;
       a.playbackRate = CRY_PITCH[emotion] ?? 1;
-      a.volume = 0.55;
+      a.volume = this.app.config.volume ?? CRY_VOLUME;
       (sink && a.setSinkId ? a.setSinkId(sink).catch(() => {}) : Promise.resolve())
         .then(() => a.play())
         .then(() => {
@@ -317,24 +321,31 @@ export class Mon {
     } else sy = 1 + 0.025 * Math.sin(t * 2.4);
     // 공식 그림처럼 왼쪽을 보고 있다고 보고, 오른쪽으로 갈 때 뒤집는다
     if ([7, 0, 1].includes(this.dir)) sx = -sx;
-    return `translateY(${-lift}px) scale(${sx}, ${sy})`;
+    return `translateY(${-lift}px) scale(${sx * this.S}, ${sy * this.S})`;   // 시트는 원래 크기라 배율도 여기서 곱한다
   }
 
   render() {
-    if (this.hidden) { this.el.classList.add('hidden'); return; }
-    this.el.classList.remove('hidden');
+    // 바뀐 값만 스타일에 쓴다: 수백 마리가 나와 있으면 매 프레임 같은 값을 다시 쓰는 것만으로도 화면이 버벅인다
+    const r = this.rendered ||= {};
+    const set = (el, prop, v) => {
+      const k = (el === this.el ? 'el.' : el === this.sprite ? 'sprite.' : 'bubble.') + prop;
+      if (r[k] !== v) { r[k] = v; el.style[prop] = v; }
+    };
+    if (r.hidden !== this.hidden) { r.hidden = this.hidden; this.el.classList.toggle('hidden', this.hidden); }
+    if (this.hidden) return;
     const an = this.anim;
     const row = an.a.rows >= 8 ? OCT_TO_ROW[this.dir] : 0;
-    this.sprite.style.backgroundPosition = `${-an.frame * an.a.w * this.S}px ${-row * an.a.h * this.S}px`;
-    if (this.def.simple) this.sprite.style.transform = `translate(-50%, -50%) ${this.simpleMotion(an)}`;
+    set(this.sprite, 'backgroundPosition', `${-an.frame * an.a.w}px ${-row * an.a.h}px`);
+    if (this.def.simple) set(this.sprite, 'transform', `translate(-50%, -50%) ${this.simpleMotion(an)}`);
     // PMD 프레임은 발밑에 여백이 있어 30%만 올리고, 여백 없는 이미지 한 장은 아랫변이 그림자에 닿게 절반 올린다
-    this.sprite.style.top = -(this.bodyH * (this.def.simple ? 0.5 : 0.3) + this.z) + 'px';
-    this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
-    this.el.style.zIndex = Math.round(this.y);
+    set(this.sprite, 'top', -Math.round(this.bodyH * (this.def.simple ? 0.5 : 0.3) + this.z) + 'px');
+    set(this.el, 'transform', `translate(${Math.round(this.x)}px, ${Math.round(this.y)}px)`);
+    set(this.el, 'zIndex', String(Math.round(this.y)));
+    if (!this.bubble.classList.contains('show')) return;
     // 화면 가장자리에서 말풍선이 잘리지 않게
     const half = 150;
     const shift = Math.max(half - this.x, 0) - Math.max(this.x + half - this.app.w, 0);
-    this.bubble.style.marginLeft = shift + 'px';
-    this.bubble.style.bottom = this.bodyH * 0.75 + 12 + this.z + 'px';
+    set(this.bubble, 'marginLeft', Math.round(shift) + 'px');
+    set(this.bubble, 'bottom', Math.round(this.bodyH * 0.75 + 12 + this.z) + 'px');
   }
 }

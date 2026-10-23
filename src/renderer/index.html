@@ -24,7 +24,6 @@
         <div class="party-head">
           <input id="party-q" placeholder="이름으로 찾기" autocomplete="off" spellcheck="false">
           <span id="party-count"></span>
-          <button type="button" id="party-all" title="목록의 포켓몬을 모두 화면에 내보내기">전부 내보내기</button>
           <button type="button" id="party-none" title="화면의 포켓몬을 모두 몬스터볼로">전부 들여보내기</button>
         </div>
         <div id="party-grid"></div>
@@ -51,6 +50,7 @@
         <label><span>🎤 입력</span><select id="mic-sel"></select></label>
         <div id="meter"><div id="meter-bar"></div></div>
         <label><span>🔊 출력</span><select id="spk-sel"></select><button type="button" id="spk-test">테스트</button></label>
+        <label><span>🔉 볼륨</span><input type="range" id="vol" min="0" max="100" step="5" title="울음소리 크기"><em id="vol-val"></em></label>
         <label><span>🗣 인식</span><em id="stt-engine"></em></label>
       </div>
       <div id="log"></div>
