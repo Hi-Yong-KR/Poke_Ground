@@ -40,6 +40,9 @@ const userDex = () => path.join(app.getPath('userData'), 'dex');
 let listDownloaded = async () => [];   // src/main/dexdownload.mjs
 let downloadDex = async () => 'missing';
 let importCreation, deleteCreation;   // src/main/creations.mjs
+// 울음소리: 처음 실행할 때 전국도감 전부를 userData/cries/<번호>.ogg 로 받아 /cries/ 로 낸다 (src/main/cries.mjs)
+const CRY_URL = '/cries/';
+const userCries = () => path.join(app.getPath('userData'), 'cries');
 const userCreations = () => path.join(app.getPath('userData'), 'creations');
 
 // 사용자가 직접 넣는 그림 (이미지 한 장 또는 PMD zip·폴더) → userData/creations/<id>/, /user/<id>/ 로 서빙
@@ -110,11 +113,30 @@ function startServer() {
         if (f.startsWith(userCreations() + path.sep)) sendFile(f, res); else { res.writeHead(403); res.end(); }
         return;
       }
+      if (url.startsWith(CRY_URL)) {
+        const f = path.normalize(path.join(userCries(), url.slice(CRY_URL.length)));
+        if (f.startsWith(userCries() + path.sep)) sendFile(f, res); else { res.writeHead(403); res.end(); }
+        return;
+      }
       const fallback = url.startsWith(DEX_URL) && path.normalize(path.join(userDex(), url.slice(DEX_URL.length)));
       sendFile(file, res, fallback && fallback.startsWith(userDex()) ? () => sendFile(fallback, res) : null);
     });
     server.listen(0, '127.0.0.1', () => resolve(server.address().port));
   });
+}
+
+/** 못 받은 울음소리를 뒤에서 받는다. 시작·끝을 렌더러에 알려 명령창 기록에 남긴다 */
+async function fetchCries() {
+  try {
+    if (win.webContents.isLoading()) await new Promise((r) => win.webContents.once('did-finish-load', r));   // 알림을 놓치지 않게
+    const { POKEDEX } = await import(pathToFileURL(path.join(ROOT, 'src', 'shared', 'pokedex.mjs')).href);
+    const { downloadCries } = await import(pathToFileURL(path.join(__dirname, 'cries.mjs')).href);
+    let started = false;
+    const r = await downloadCries(POKEDEX.map(([n]) => n), userCries(), (_done, todo) => {
+      if (!started) { started = true; send('cries', { phase: 'start', todo }); }
+    });
+    if (r.todo) send('cries', { phase: 'done', ...r });
+  } catch (e) { console.error('[cries]', e.message); }
 }
 
 // ---- 화면 객체 스캐너 (상주 PowerShell) ----
@@ -279,7 +301,8 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
     startScanner();
     whisper.start();   // 모델을 미리 올려 두어 첫 명령이 느리지 않게
-    createWindow();
+    await createWindow();
+    fetchCries();
   });
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();

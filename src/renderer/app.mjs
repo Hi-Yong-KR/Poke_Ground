@@ -819,6 +819,11 @@ poke.onEvent(({ type, payload }) => {
   if (type === 'toggle-bar') setBar(payload === true ? true : bar.classList.contains('collapsed'));
   else if (type === 'voice') (payload ? startVoice() : voice.stop());
   else if (type === 'sound') app.config.sound = payload;
+  else if (type === 'cries') {   // 처음 실행할 때 메인이 울음소리를 받는다 (src/main/cries.mjs)
+    if (payload.phase === 'start') app.log(`🔊 포켓몬 울음소리를 받는 중이에요 (${payload.todo}마리, 처음 한 번만)`, 'sys');
+    else if (payload.got) app.log(`🔊 울음소리 ${payload.got}마리를 받았어요${payload.failed ? ` — 못 받은 ${payload.failed}마리는 다음 실행 때 다시 받아요` : ''}`, 'sys');
+    else if (payload.failed) app.log('🔊 인터넷 연결이 안 돼서 울음소리를 못 받았어요 — 다음 실행 때 다시 받아요', 'sys');
+  }
 });
 
 // ---------- 메인 루프 ----------

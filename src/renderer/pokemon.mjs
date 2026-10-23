@@ -11,6 +11,11 @@ const CRY_PITCH = {
   Sad: 0.86, Crying: 0.82, 'Teary-Eyed': 0.88, Pain: 0.9, Sigh: 0.85, Dizzy: 0.88, Worried: 0.95,
   Angry: 0.94, Shouting: 1.0, Determined: 1.0,
 };
+// 여러 마리가 한꺼번에 반응해도(모두 나와, 전부 내보내기) 울음소리가 쏟아지지 않게: 동시에 2마리까지, 시작 간격 0.4초.
+// 못 운 포켓몬도 말풍선·글자는 그대로 보인다
+const CRY_MAX_AT_ONCE = 2;
+const CRY_GAP_MS = 400;
+const cryGate = { playing: 0, last: 0 };
 
 export async function loadSpecies(key) {
   const base = POKEMON[key]?.assets || `/assets/pokemon/${key}/`;   // 사용자가 추가한 포켓몬은 assets/dex/
@@ -163,15 +168,30 @@ export class Mon {
     if (!this.app.config.sound && !force) return;
     const now = performance.now();
     if (now - (this.lastCry || 0) < 700 && !force) return;   // 연달아 겹쳐 울지 않게
+    if (!force && (cryGate.playing >= CRY_MAX_AT_ONCE || now - cryGate.last < CRY_GAP_MS)) return;
     this.lastCry = now;
-    const a = new Audio(`${this.sp.base}cry.ogg`);
-    a.preservesPitch = false;
-    a.playbackRate = CRY_PITCH[emotion] ?? 1;
-    a.volume = 0.55;
+    cryGate.last = now;
+    // 처음 실행 때 받아 둔 울음소리(/cries/<도감 번호>.ogg)가 먼저, 아직 못 받았으면 앱에 들어 있는 것
+    const srcs = [this.def.dex && `/cries/${this.def.dex}.ogg`, `${this.sp.base}cry.ogg`].filter(Boolean);
     const sink = this.app.speakerId;   // 장치 설정에서 고른 출력 장치
-    (sink && a.setSinkId ? a.setSinkId(sink).catch(() => {}) : Promise.resolve())
-      .then(() => a.play())
-      .catch(() => { /* 울음소리 파일이 없으면 조용히 넘어감 */ });
+    const play = (i) => {
+      if (i >= srcs.length) return;   // 울음소리 파일이 없으면 조용히 넘어감
+      const a = new Audio(srcs[i]);
+      a.preservesPitch = false;
+      a.playbackRate = CRY_PITCH[emotion] ?? 1;
+      a.volume = 0.55;
+      (sink && a.setSinkId ? a.setSinkId(sink).catch(() => {}) : Promise.resolve())
+        .then(() => a.play())
+        .then(() => {
+          cryGate.playing++;
+          let done = false;
+          const end = () => { if (!done) { done = true; cryGate.playing--; } };
+          a.addEventListener('ended', end);
+          a.addEventListener('error', end);
+          setTimeout(end, 3000);   // ended가 안 오더라도 자리를 계속 차지하지 않게
+        }, () => play(i + 1));
+    };
+    play(0);
   }
 
   /** 리액션 실행: 애니메이션 + 감정 파티클 + 요약 텍스트 */

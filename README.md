@@ -26,7 +26,7 @@ npm run make-offline
 ```
 
 - 결과: `dist\PokeGround-offline.zip` (약 0.9GB, 풀면 1.4GB) — Electron 본체, 휴대용 파이썬 + faster-whisper, Visual C++ 런타임 DLL, Whisper 모델, 스프라이트(포켓몬 980여 마리 전부)가 들어 있습니다.
-- 울음소리(게임 원음)는 저작권 때문에 기본으로 빠집니다. 넣으려면 `powershell -File scripts\make-offline.ps1 -IncludeCries` (개인·비상업적 용도로만).
+- 울음소리(게임 원음)는 저작권 때문에 zip에 넣지 않고, 앱이 처음 실행될 때 인터넷이 되면 받아 둡니다(아래 참고). 인터넷이 없는 PC에서도 처음 27마리가 울게 하려면 `powershell -File scripts\make-offline.ps1 -IncludeCries` (개인·비상업적 용도로만).
 
 ```bash
 npm install
@@ -44,7 +44,7 @@ npm start
 - 한 번 내보낸 포켓몬은 음성·텍스트 명령("파이리 크롬 화염방사", `님피아 나와`)으로도 부를 수 있어요.
 - 각자 타입에 맞는 기술 4~5개를 쓰고, 못 배우는 기술을 시키면 거절해요. 기술 연출이 없는 타입(독·땅·벌레·고스트)은 비슷한 타입(악·바위·풀) 기술을 씁니다.
 - 배포판에 그림이 없는 포켓몬(만들 때 PMD SpriteCollab에 아직 그림이 없던 45종 등)은 **＋ 포켓몬**에서 찾아 **[받아서 내보내기]** 를 누르면 그때 그림을 받아 옵니다(인터넷 필요). 받은 그림은 `%APPDATA%poke-grounddex`에 남아요.
-- 울음소리는 소스에서 실행할 때 일부 포켓몬만 나와요(게임 원음이라 배포판에는 빠짐).
+- **울음소리**: 처음 실행할 때 인터넷이 되면 전국도감 1025종의 울음소리(약 17MB)를 한 번 받아 `%APPDATA%\poke-ground\cries`에 둡니다. 명령창에 "울음소리를 받는 중" → "받았어요"가 표시돼요. 인터넷이 없으면 다음 실행 때 다시 받아요.
 
 ### 내 그림으로 추가 (도감 포켓몬·창작 캐릭터)
 
@@ -132,7 +132,7 @@ test/                  명령 해석 테스트 (npm test)
 
 - 스프라이트·초상화: [PMD SpriteCollab](https://sprites.pmdcollab.org) — **CC BY-NC 4.0** (비상업적 사용, 출처 표기). 포켓몬별 제작자는 `assets/pokemon/*/CREDITS.txt`, `assets/dex/*/CREDITS.txt`에 있습니다.
 - 전국도감 이름·타입: [PokeAPI](https://github.com/PokeAPI/pokeapi) 데이터 — BSD-3-Clause
-- 울음소리: [PokeAPI/cries](https://github.com/PokeAPI/cries) (최신 게임 음원). 게임 원음이라 저장소에는 포함하지 않고 `npm run fetch-assets`로 받습니다. 트레이 메뉴 '울음소리'로 끌 수 있어요.
+- 울음소리: [PokeAPI/cries](https://github.com/PokeAPI/cries) (최신 게임 음원). 게임 원음이라 저장소·배포판에는 포함하지 않고 앱이 처음 실행될 때 받습니다(`src/main/cries.mjs`). 트레이 메뉴 '울음소리'로 끌 수 있어요.
 - 음성 모델: [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) (OpenAI Whisper small의 CTranslate2 변환) — MIT, 엔진 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — MIT
 - 예비 음성 모델: [Vosk](https://alphacephei.com/vosk/models) `vosk-model-small-ko-0.22` — Apache 2.0
 - 포켓몬 캐릭터의 권리는 Nintendo / Creatures / GAME FREAK에 있습니다. 이 프로젝트는 **개인·비상업적 용도**로만 사용하세요.

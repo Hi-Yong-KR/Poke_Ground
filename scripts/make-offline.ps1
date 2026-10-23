@@ -5,7 +5,7 @@
 #   - 휴대용 파이썬 + faster-whisper (venv는 다른 PC로 옮길 수 없어서 파이썬 자체에 설치)
 #   - Visual C++ 런타임 DLL을 python.exe 옆에 둔다 (app-local 배포: 설치·관리자 권한 불필요)
 #   - Whisper small 모델, 스프라이트 (기본 27마리 + 도감에서 추가할 수 있는 전부, assets\dex)
-# 울음소리(게임 원음)는 저작권 때문에 기본으로 빼고, -IncludeCries 를 주면 넣는다.
+# 울음소리(게임 원음)는 저작권 때문에 기본으로 빼고(앱이 첫 실행 때 받는다), -IncludeCries 를 주면 처음 27마리분을 넣는다.
 # 사용법: npm run make-offline   (또는 powershell -File scripts\make-offline.ps1 [-IncludeCries])
 # ※ PowerShell 5.1이 한글을 읽으려면 이 파일은 UTF-8 BOM이어야 한다.
 param([switch]$IncludeCries)
