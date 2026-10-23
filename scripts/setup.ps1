@@ -43,6 +43,36 @@ function Get-PrivateNode {
   Remove-Item $zip
 }
 
+# Whisper 엔진(ctranslate2)이 쓰는 Microsoft Visual C++ 런타임. 새로 설치한 Windows에는 없을 수 있다
+function Test-VcRuntime {
+  foreach ($d in 'msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+    if (-not (Test-Path (Join-Path $env:SystemRoot "System32\$d"))) { return $false }
+  }
+  return $true
+}
+
+# Microsoft 공식 설치 파일을 받아 서명을 확인한 뒤 설치한다. 관리자 확인(UAC) 창이 한 번 뜬다
+function Install-VcRuntime {
+  Write-Host '음성인식에 필요한 Microsoft Visual C++ 런타임을 설치합니다 — 관리자 확인 창이 뜨면 "예"를 눌러 주세요'
+  $exe = Join-Path $env:TEMP 'poke-vc_redist.x64.exe'
+  try {
+    Invoke-WebRequest -UseBasicParsing -OutFile $exe 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
+    $sig = Get-AuthenticodeSignature $exe
+    if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
+      Write-Host 'Visual C++ 런타임 설치 파일의 서명을 확인할 수 없어요' -ForegroundColor Yellow
+      return $false
+    }
+    $p = Start-Process $exe -ArgumentList '/install', '/quiet', '/norestart' -Verb RunAs -Wait -PassThru
+    # 0 성공, 1638 더 새 버전이 이미 있음, 3010 재부팅 필요(DLL은 이미 설치됨)
+    if ($p.ExitCode -notin 0, 1638, 3010) { Write-Host "Visual C++ 런타임 설치 실패 (코드 $($p.ExitCode))" -ForegroundColor Yellow }
+  } catch {
+    Write-Host "Visual C++ 런타임을 설치하지 못했어요 ($($_.Exception.Message))" -ForegroundColor Yellow
+  } finally {
+    Remove-Item $exe -ErrorAction SilentlyContinue
+  }
+  return (Test-VcRuntime)
+}
+
 try {
   # ---- 1) Node.js ----
   if (Test-Path (Join-Path $NodeDir 'node.exe')) { $env:Path = "$NodeDir;$env:Path" }   # 전에 받아 둔 것
@@ -66,13 +96,22 @@ try {
   }
 
   # ---- 4) 음성인식 (안 되면 텍스트 명령만 쓰면 되므로 실패해도 계속) ----
-  if (-not (Test-Path 'assets\models\whisper-small\model.bin')) {
+  $whisperOk = Test-Path 'assets\models\whisper-small\model.bin'
+  if (-not $whisperOk) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'setup-whisper.ps1')
-    if ($LASTEXITCODE -ne 0 -and -not (Test-Path 'assets\models\ko.tar.gz')) {
-      Write-Host 'Whisper 설치 실패 — 예비용 Vosk 모델을 받습니다' -ForegroundColor Yellow
-      & npm run fetch-voice
-      if ($LASTEXITCODE -ne 0) { Write-Host '음성 모델을 받지 못했어요 — 텍스트 명령만 쓸 수 있어요' -ForegroundColor Yellow }
-    }
+    $whisperOk = $LASTEXITCODE -eq 0
+  }
+  if ($whisperOk -and -not (Test-VcRuntime)) { $whisperOk = Install-VcRuntime }
+  if ($whisperOk) {
+    # 설치만 되고 못 불러오는 경우(DLL 누락 등)를 여기서 잡는다
+    & (Join-Path $Root '.venv\Scripts\python.exe') -I -c 'import faster_whisper' 2>$null
+    $whisperOk = $LASTEXITCODE -eq 0
+    if (-not $whisperOk) { Write-Host 'Whisper를 불러오지 못했어요' -ForegroundColor Yellow }
+  }
+  if (-not $whisperOk -and -not (Test-Path 'assets\models\ko.tar.gz')) {
+    Write-Host 'Whisper를 쓸 수 없어서 예비용 Vosk 모델을 받습니다' -ForegroundColor Yellow
+    & npm run fetch-voice
+    if ($LASTEXITCODE -ne 0) { Write-Host '음성 모델을 받지 못했어요 — 텍스트 명령만 쓸 수 있어요' -ForegroundColor Yellow }
   }
 } catch {
   Fail $_.Exception.Message
