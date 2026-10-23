@@ -14,7 +14,7 @@ npm start                   # 앱 실행
 npm run fetch-dex           # 도감에서 추가할 수 있는 포켓몬 그림 → assets/dex (git 부분 받기, 약 300MB)
 npm run make-offline        # 오프라인 배포판 dist/PokeGround-offline.zip (받는 PC는 인터넷 불필요)
 start.bat                   # 배포용 진입점: 준비가 다 됐으면 바로 실행, 아니면 scripts/setup.ps1(Node 없으면 .node에 받기 → npm install → 에셋 → Whisper)
-npm test                    # node --test test/parser.test.mjs
+npm test                    # node --test: test/parser·dex·creations.test.mjs
 node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스트 하나만
 ```
 
@@ -56,10 +56,19 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
 - **파이썬**: `setup-whisper.ps1`이 `.venv` → 시스템 `python` → `py -3` 순으로 3.9+를 찾고, 없으면 uv(버전·SHA256 고정)로 `.python`에 3.12를 받아 `setup-whisper.py`를 실행한다(`-Private`로 그 경로 강제 테스트). WindowsApps의 가짜 python.exe는 실행해 봐서 걸러낸다. 시스템 파이썬은 설치 스크립트 실행에만 쓰고, 워커는 항상 `.venv\Scripts\python.exe -I`로 돈다. 워커 출력은 `json.dumps` 기본(ASCII 이스케이프)이라 콘솔 코드페이지(cp949)와 무관하다.
 - **오프라인 배포판**(`make-offline.ps1`): venv는 base 파이썬의 절대 경로에 묶여 옮길 수 없어서, uv의 휴대용 파이썬(`setup-whisper.ps1 -Private -PythonOnly`)을 `runtime\python`에 복사하고 거기에 직접 pip 설치한다(uv가 붙인 `EXTERNALLY-MANAGED` 삭제). VC++ DLL은 python.exe 옆에 app-local로 둔다. `whisper.js`는 `runtime\python\python.exe`가 있으면 그것을, 없으면 `.venv`를 쓴다. Electron 실행에 Node는 필요 없어 넣지 않는다. 울음소리는 `-IncludeCries` 때만(처음 27마리분). 평소에는 앱이 첫 실행 때 받는다(구조의 울음소리 항목).
 - **Visual C++ 런타임**: ctranslate2·onnxruntime이 `msvcp140.dll`/`msvcp140_1.dll`을 쓰는데 휠에 들어 있지 않다(새 Windows엔 없을 수 있음). `setup.ps1`이 System32에 없으면 `aka.ms/vs/17/release/vc_redist.x64.exe`를 받아 Authenticode 서명(Microsoft Corporation)을 확인하고 UAC로 설치, 끝나면 `.venv` 파이썬으로 `import faster_whisper`를 실제로 해 봐서 실패하면 Vosk를 받는다. 출처가 불분명한 PyPI `msvc-runtime` 패키지는 일부러 쓰지 않았다.
-- **start.bat**: cmd는 UTF-8 한글을 cp949로 읽어 줄이 깨질 수 있으므로 ASCII만 쓰고, CRLF여야 `goto`가 동작한다(.gitattributes로 고정). 한글 안내 문구는 `setup.ps1`(UTF-8 BOM)에서 낸다. `-PrivateNode`로 개인 Node 경로를 강제 테스트할 수 있다.
+- **start.bat**: cmd는 UTF-8 한글을 cp949로 읽어 줄이 깨질 수 있으므로 ASCII만 쓰고, CRLF여야 `goto`가 동작한다(.gitattributes로 고정). 한글 안내 문구는 `setup.ps1`(UTF-8 BOM)에서 낸다. `-PrivateNode`로 개인 Node 경로를 강제 테스트할 수 있다. 배포판용 `scripts/offline/start.bat`은 따로 있는 파일로, `chcp 65001` 뒤 한글 안내를 직접 낸다(`goto` 없음).
+- **이름**: 화면의 버튼은 📖 도감이지만 코드·설정은 예전 이름 그대로 `party`(`#party`, `renderParty`, `config.party`)다. ＋ 포켓몬 창이 `#dex`.
+- **예전 설정 가져오기**: `loadConfig`는 `userData/config.json`이 없으면 `%APPDATA%\poke-action\config.json`(옛 앱 이름)을 한 번 가져온다. 그래서 이 PC에서는 빈 프로필로 띄워도 첫 실행이 피카츄 한 마리가 아닐 수 있다.
 - **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.node/`, `.python/`, `.venv/`, `.cache/`, `assets/models/`(Whisper·Vosk), `assets/dex/`(약 280MB, fetch-dex로 생성), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.
 - 시스템 설정(Windows 마이크 개인정보·장치 사용 여부)은 앱이 바꾸지 않는다. 원인 표시와 `ms-settings:` 열기까지만 한다.
+
+## 릴리즈
+
+GitHub 릴리즈(`gh release`)에 `dist/PokeGround-offline.zip` 하나를 올린다. 제목 `포켓몬 그라운드 vX.Y.Z (오프라인 배포판)`, 본문은 이전 릴리즈와 같은 틀(받아서 바로 실행 / 새로 바뀐 점 / 사양·출처). 순서: 커밋·푸시 → `npm run make-offline`(시작할 때 이전 zip을 먼저 지움, 약 860MB) → 빈 폴더에 System32 `tar`로 풀어 `start.bat` 실행 확인 → `gh release create vX.Y.Z dist\PokeGround-offline.zip --target <커밋 전체 SHA> --title ... --notes-file ...`. `--target`에 짧은 SHA를 주면 HTTP 422로 거절된다. make-offline의 휴대용 파이썬 단계(`uv python find`)가 가끔 이유 없이 실패하는데, 다시 돌리면 된다.
 
 ## 실행 중인 앱 디버깅
 
 `node_modules\electron\dist\electron.exe . --remote-debugging-port=9223`로 띄우면 CDP(`http://127.0.0.1:9223/json`)로 렌더러에서 JS를 실행할 수 있다. 렌더러는 `window.app`(포켓몬 `app.mons`, `app.fx`, `app.config`), `window.handleCommand(text, 'text'|'voice')`, `window.voice`를 노출한다. 렌더러 콘솔 경고/에러는 main의 stdout으로도 나온다. 트레이 메뉴의 '개발자 도구'로도 열 수 있다.
+
+- 빈 프로필로 시험하려면 `--user-data-dir=<빈 폴더>`를 준다(`APPDATA` 환경변수는 Electron이 무시한다).
+- 메인 프로세스는 `--inspect=9229`를 더하면 CDP로 볼 수 있다(`includeCommandLineAPI: true`면 `require('electron')`을 쓸 수 있음). 트레이·메뉴처럼 변수로 닿지 않는 객체는 `Runtime.queryObjects`(예: `Menu.prototype`)로 찾아 `items[0].label`을 읽거나 `click()`을 부른다. 네이티브 메뉴를 SendKeys로 누르지 말 것: 메뉴가 늦게 뜨면 키가 다른 창으로 가고, '종료'가 눌려 앱이 꺼지기도 한다. 디버거 안에서 `popUpContextMenu()`를 바로 부르면 앱이 죽으니 `setTimeout`으로 미룬다.
