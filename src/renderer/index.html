@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>PokeAction</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="targets"></div>
+  <div id="stage"></div>
+  <canvas id="fx"></canvas>
+
+  <div id="bar" class="interactive">
+    <div id="panel">
+      <div id="panel-head">
+        <span>포켓몬 액션</span>
+        <button type="button" id="menu-btn" title="메뉴 (몬스터볼 우클릭과 같음)">☰</button>
+        <button type="button" id="quit-btn" title="프로그램 종료">✕ 종료</button>
+      </div>
+      <div id="log"></div>
+      <div id="voice-line"><span id="mic-dot"></span><span id="voice-status">음성인식 준비 중...</span><span id="partial"></span><button type="button" id="mic-fix" hidden>설정 열기</button></div>
+      <form id="cmd-form">
+        <input id="cmd" autocomplete="off" spellcheck="false" placeholder="예) 피카츄 크롬 10만볼트 · 리자몽 휴지통 불대문자 · 모두 이리와">
+        <button type="button" id="mic-btn" title="음성인식 켜기/끄기">🎤</button>
+        <button type="submit" id="send-btn">명령</button>
+      </form>
+    </div>
+    <button id="ball" title="명령창 (Ctrl+Alt+Space)"></button>
+  </div>
+
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+Source: PMD SpriteCollab (https://sprites.pmdcollab.org/#/0006)
+License: CC BY-NC 4.0
+
+[Sprite]
+2020-10-07 17:58:43.345381	CHUNSOFT	CUR	Unspecified	Attack,Charge,Double,Hop,Hurt,Idle,Rotate,Shoot,Sleep,Strike,Swing,Walk
+2021-10-01 08:17:01.621356	<@!237286997645983744>	CUR	PMDCollab_1	Charge,Double,Faint,Hop,Hurt,Rotate,Shoot,Sleep,Strike,Swing
+2023-03-19 18:54:53.170665	<@!237286997645983744>	CUR	PMDCollab_1	Faint
+
+[Portrait]
+2024-07-04 18:29:32.233290	CHUNSOFT	CUR	CC_BY-NC_4	Normal,Happy,Pain,Surprised,Teary-Eyed,Special0
+2024-07-04 18:32:31.753703	<@!327927398941196289>	CUR	CC_BY-NC_4	Sad,Joyous,Crying,Inspired,Sigh,Shouting,Stunned,Angry,Dizzy,Worried,Determined

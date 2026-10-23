@@ -1,0 +1,20 @@
+﻿{
+  "name": "poke-action",
+  "version": "1.0.0",
+  "description": "바탕화면을 돌아다니는 포켓몬 키우기 데스크탑 앱",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "fetch-assets": "node scripts/fetch-assets.mjs",
+    "fetch-voice": "node scripts/fetch-voice-model.mjs",
+    "setup": "node scripts/fetch-assets.mjs && node scripts/fetch-voice-model.mjs",
+    "test": "node --test test/parser.test.mjs"
+  },
+  "dependencies": {
+    "vosk-browser": "0.0.8"
+  },
+  "devDependencies": {
+    "electron": "38.2.0"
+  }
+}

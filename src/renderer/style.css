@@ -1,0 +1,141 @@
+html, body {
+  margin: 0; width: 100%; height: 100%; overflow: hidden;
+  background: transparent;
+  font-family: 'Malgun Gothic', 'Segoe UI', sans-serif;
+  user-select: none;
+}
+
+#stage, #targets { position: fixed; inset: 0; pointer-events: none; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+
+/* ---- 포켓몬 ---- */
+.mon { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.mon .shadow {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, .35) 0%, rgba(0, 0, 0, .15) 60%, transparent 72%);
+  transform: translate(-50%, -50%);
+}
+.mon .sprite {
+  position: absolute; image-rendering: pixelated; background-repeat: no-repeat;
+  transform: translate(-50%, -50%);
+}
+.mon .hit {
+  position: absolute; transform: translate(-50%, -50%);
+  pointer-events: auto; cursor: grab; border-radius: 40%;
+}
+.mon.dragging .hit { cursor: grabbing; }
+.mon.hidden { display: none; }
+
+.bubble {
+  position: absolute; left: 0; bottom: 0; transform: translate(-50%, 0);
+  display: flex; gap: 8px; align-items: center;
+  width: max-content; min-width: 150px; max-width: 270px; padding: 7px 11px 7px 7px;
+  background: rgba(255, 255, 255, .96); color: #2b2b2b;
+  border: 3px solid #3b4cca; border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  opacity: 0; transition: opacity .2s, transform .2s;
+  pointer-events: none; z-index: 10;
+}
+.bubble.show { opacity: 1; transform: translate(-50%, -6px); }
+.bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -11px; transform: translateX(-50%);
+  border: 8px solid transparent; border-top-color: #3b4cca; border-bottom: 0;
+}
+.bubble img { width: 48px; height: 48px; image-rendering: pixelated; border-radius: 8px; flex: none; border: 2px solid #ffcb05; }
+.bubble .cry { font-weight: 800; font-size: 15px; color: #3b4cca; }
+.bubble .sum { font-size: 12.5px; line-height: 1.35; color: #444; margin-top: 2px; }
+.bubble .sum::before { content: '💭 '; }
+
+/* ---- 대상 표시 ---- */
+.target-box {
+  position: absolute; border: 3px dashed #ff3d3d; border-radius: 10px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .7), inset 0 0 30px rgba(255, 60, 60, .25);
+  animation: target-pulse .5s ease-in-out infinite alternate;
+}
+.target-box span {
+  position: absolute; left: 50%; top: -34px; transform: translateX(-50%);
+  white-space: nowrap; font-weight: 800; font-size: 15px; color: #fff;
+  background: #ff3d3d; padding: 4px 10px; border-radius: 999px;
+}
+.target-box.shake { animation: target-shake .08s linear infinite; }
+@keyframes target-pulse { from { opacity: .55; } to { opacity: 1; } }
+@keyframes target-shake {
+  0% { transform: translate(0, 0); } 25% { transform: translate(-6px, 3px); }
+  50% { transform: translate(5px, -4px); } 75% { transform: translate(-3px, -2px); } 100% { transform: translate(0, 0); }
+}
+.hit-text {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 30px; font-weight: 900; color: #fff;
+  -webkit-text-stroke: 2px #c01818; text-shadow: 0 3px 0 #c01818, 0 6px 14px rgba(0, 0, 0, .4);
+  animation: hit-pop 1.6s ease-out forwards; white-space: nowrap;
+}
+@keyframes hit-pop {
+  0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+  15% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+  30% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%, -90%) scale(1); opacity: 0; }
+}
+
+/* ---- 명령창 ---- */
+#bar {
+  position: fixed; right: 18px; bottom: 14px; z-index: 20;
+  display: flex; align-items: flex-end; gap: 10px;
+}
+#ball {
+  width: 54px; height: 54px; border-radius: 50%; border: 3px solid #222; cursor: pointer; flex: none;
+  background: linear-gradient(#ee1515 0 46%, #222 46% 54%, #f4f4f4 54%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35); position: relative; transition: transform .15s;
+}
+#ball::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%);
+  border-radius: 50%; background: #fff; border: 3px solid #222;
+}
+#ball:hover { transform: rotate(-15deg) scale(1.06); }
+#ball.listening::after { background: #7CFC7C; box-shadow: 0 0 10px #7CFC7C; }
+
+#panel {
+  width: 460px; background: rgba(24, 28, 44, .92); color: #eee; border-radius: 16px; padding: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .4); border: 2px solid #3b4cca;
+  transition: opacity .2s, transform .2s; transform-origin: bottom right;
+}
+#bar.collapsed #panel { opacity: 0; transform: scale(.85); pointer-events: none; }
+#panel-head {
+  display: flex; align-items: center; gap: 6px; margin: -2px 0 6px; padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, .12); font-size: 13px; font-weight: 800; color: #ffcb05;
+}
+#panel-head span { flex: 1; }
+#panel-head button {
+  border: 0; border-radius: 8px; padding: 3px 10px; cursor: pointer; font-family: inherit;
+  font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, .12); color: #eee;
+}
+#panel-head button:hover { background: rgba(255, 255, 255, .22); }
+#quit-btn:hover, #quit-btn.confirm { background: #e53935 !important; color: #fff; }
+#log { max-height: 170px; overflow-y: auto; font-size: 12.5px; line-height: 1.5; margin-bottom: 6px; }
+#log div { padding: 2px 4px; border-radius: 6px; }
+#log .me { color: #ffcb05; }
+#log .sys { color: #9fb3ff; }
+#log .dim { color: #888; }
+#voice-line { font-size: 12px; color: #aab; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; min-height: 18px; }
+#mic-dot { width: 9px; height: 9px; border-radius: 50%; background: #666; flex: none; }
+#mic-dot.on { background: #4cff6a; box-shadow: 0 0 8px #4cff6a; animation: blink 1.2s infinite; }
+#mic-dot.loading { background: #ffcb05; }
+#mic-dot.off { background: #ff5a5a; }
+#partial { color: #fff; font-style: italic; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+@keyframes blink { 50% { opacity: .4; } }
+#voice-status { flex: 1; }
+#mic-fix {
+  flex: none; border: 0; border-radius: 8px; padding: 3px 9px; cursor: pointer; font-family: inherit;
+  font-size: 12px; font-weight: 700; background: #ff5a5a; color: #fff;
+}
+#cmd-form { display: flex; gap: 6px; }
+#cmd {
+  flex: 1; border: 2px solid #3b4cca; background: #fff; color: #222; border-radius: 10px;
+  padding: 8px 10px; font-size: 14px; outline: none; font-family: inherit; user-select: text;
+}
+#cmd:focus { border-color: #ffcb05; }
+#cmd-form button {
+  border: 0; border-radius: 10px; padding: 0 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  background: #ffcb05; color: #2a3a8c; font-size: 14px;
+}
+#mic-btn.muted { filter: grayscale(1); opacity: .5; }

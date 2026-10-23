@@ -1,0 +1,9 @@
+Source: PMD SpriteCollab (https://sprites.pmdcollab.org/#/0025)
+License: CC BY-NC 4.0
+
+[Sprite]
+2020-10-07 17:58:43.416193	CHUNSOFT	CUR	Unspecified	Walk,Attack,QuickStrike,Shoot,Shock,Sleep,Hurt,Idle,Swing,Double,Hop,Charge,Rotate,EventSleep,Wake,Eat,Tumble,Pose,Pull,Pain,Float,DeepBreath,Nod,Sit,LookUp,Sink,Trip,Laying,LeapForth,Head,Cringe,LostBalance,TumbleBack,Faint,HitGround
+
+[Portrait]
+2020-10-07 17:58:43.417190	CHUNSOFT	CUR	Unspecified	Angry,Crying,Determined,Dizzy,Happy,Inspired,Joyous,Normal,Pain,Sad,Shouting,Sigh,Stunned,Surprised,Teary-Eyed,Worried
+2022-02-03 17:34:26.112052	CHUNSOFT	CUR	Unspecified	Angry,Crying,Determined,Dizzy,Happy,Inspired,Joyous,Normal,Pain,Sad,Shouting,Sigh,Special1,Special2,Stunned,Surprised,Teary-Eyed,Worried
