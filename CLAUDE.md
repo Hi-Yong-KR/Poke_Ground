@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-바탕화면 위를 포켓몬이 돌아다니고, 음성/텍스트 명령("피카츄 크롬 10만볼트")으로 실제 창·바탕화면 아이콘에 기술을 쓰는 **Windows 전용 Electron 앱**. 사용자 대상 문서는 README.md, 사용자가 요청한 프롬프트 기록은 prompts.txt(요청이 생길 때마다 원문 그대로 이어 붙여 왔음).
+바탕화면 위를 포켓몬이 돌아다니고, 음성/텍스트 명령("피카츄 크롬 10만볼트")으로 실제 창·바탕화면 아이콘에 기술을 쓰는 **Windows 전용 Electron 앱**. 사용자 대상 문서는 README.md, 사용자가 요청한 프롬프트 기록은 prompts.txt(요청이 생길 때마다 원문 그대로 이어 붙여 왔음). **prompts.txt는 사용자 개인용이라 .gitignore로 저장소에서 뺐다 — 다시 커밋하지 말 것.**
 
 ## 명령어
 

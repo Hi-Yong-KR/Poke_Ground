@@ -3,6 +3,7 @@ node_modules/
 .python/
 .node/
 dist/
+prompts.txt
 assets/models/
 assets/_test/
 assets/pokemon/*/cry.ogg
