@@ -16,5 +16,9 @@ contextBridge.exposeInMainWorld('poke', {
     hotwords: (list) => ipcRenderer.send('stt-hotwords', list),
     transcribe: (pcm) => ipcRenderer.invoke('stt-transcribe', pcm),
   },
-  onEvent:(cb) => ipcRenderer.on('event', (_e, msg) => cb(msg)),
+  dexDownload: (dex) => ipcRenderer.invoke('dex-download', dex),
+  creationPick: (folder) => ipcRenderer.invoke('creation-pick', folder),
+  creationImport: (src) => ipcRenderer.invoke('creation-import', src),
+  creationDelete: (id) => ipcRenderer.invoke('creation-delete', id),
+  onEvent: (cb) => ipcRenderer.on('event', (_e, msg) => cb(msg)),
 });

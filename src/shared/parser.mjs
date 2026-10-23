@@ -19,10 +19,18 @@ function buildEntries() {
   for (const x of e) x.alias = compact(x.alias);
   return e.sort((a, b) => b.alias.length - a.alias.length);
 }
-const ENTRIES = buildEntries();
-// 퍼지 매칭에 쓸 항목: 너무 짧으면 오탐이 많아 2글자 이상만
-const FUZZY_ENTRIES = ENTRIES.filter((x) => x.alias.length >= 2 && /[가-힣]/.test(x.alias)
-  && ['pokemon', 'move', 'target', 'action', 'attack'].includes(x.kind));
+let ENTRIES, FUZZY_ENTRIES, ENTRY_OF;
+/** 포켓몬 목록이 바뀌면(사용자가 추가·삭제) 별칭 표를 다시 만든다 */
+export function refreshEntries() {
+  ENTRIES = buildEntries();
+  // 퍼지 매칭에 쓸 항목: 너무 짧으면 오탐이 많아 2글자 이상만
+  FUZZY_ENTRIES = ENTRIES.filter((x) => x.alias.length >= 2 && /[가-힣]/.test(x.alias)
+    && ['pokemon', 'move', 'target', 'action', 'attack'].includes(x.kind));
+  ENTRY_OF = new Map(ENTRIES.map((e) => [e.alias, e]));
+}
+refreshEntries();
+/** 이미 다른 말(포켓몬·기술·행동·대상 등)로 쓰이는 별칭인지 */
+export const aliasTaken = (alias) => ENTRY_OF.has(compact(alias));
 
 export function stripParticle(word) {
   let w = word;
@@ -148,7 +156,6 @@ export function voiceGrammar(extra = []) {
 const VOICE_MIN_CONF = 0.65;   // 이보다 낮은 단어는 버린다
 const VOICE_MIN_AVG = 0.8;     // 남은 단어 평균 신뢰도
 const VOICE_MAX_WORDS = 5;
-const ENTRY_OF = new Map(ENTRIES.map((e) => [e.alias, e]));
 const KIND_OF = { get: (alias) => ENTRY_OF.get(alias)?.kind };
 
 /**

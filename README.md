@@ -25,7 +25,7 @@
 npm run make-offline
 ```
 
-- 결과: `dist\PokeGround-offline.zip` (약 0.7GB, 풀면 1.1GB) — Electron 본체, 휴대용 파이썬 + faster-whisper, Visual C++ 런타임 DLL, Whisper 모델, 스프라이트가 들어 있습니다.
+- 결과: `dist\PokeGround-offline.zip` (약 0.9GB, 풀면 1.4GB) — Electron 본체, 휴대용 파이썬 + faster-whisper, Visual C++ 런타임 DLL, Whisper 모델, 스프라이트(도감에서 추가할 수 있는 전부 포함)가 들어 있습니다.
 - 울음소리(게임 원음)는 저작권 때문에 기본으로 빠집니다. 넣으려면 `powershell -File scripts\make-offline.ps1 -IncludeCries` (개인·비상업적 용도로만).
 
 ```bash
@@ -44,7 +44,30 @@ npm start
 | 이브이 진화형 | 쥬피썬더, 님피아, 부스터, 글레이시아, 리피아, 블래키, 에브이, 샤미드 |
 | 그 밖의 친구들 | 리오르, 조로아, 파치리스, 치라미, 이어롤, 코산호, 에몽가, 냐스퍼, 팽도리, 주리비얀, 푸호꼬, 염버니, 브케인, 마휘핑 |
 
-트레이 메뉴 **포켓몬 고르기**에서 화면에 내보낼 포켓몬을 체크하거나, `님피아 나와`처럼 불러내면 됩니다. 각자 타입에 맞는 기술 4~5개를 쓰고, 못 배우는 기술을 시키면 거절해요.
+명령창의 **🎒 파티**(또는 트레이 메뉴 **포켓몬 고르기...**)에서 화면에 내보낼 포켓몬을 고르세요. 초상화를 누를 때마다 바로 나오거나 몬스터볼로 들어가고 창은 닫히지 않아서, 여러 마리를 한 번에 고를 수 있어요. 이름 검색, **전부 내보내기·전부 들여보내기**도 됩니다. `님피아 나와`처럼 불러내도 돼요. 각자 타입에 맞는 기술 4~5개를 쓰고, 못 배우는 기술을 시키면 거절해요.
+
+### 도감에서 포켓몬 추가 (950여 종)
+
+명령창의 **＋ 포켓몬**에서 이름(`파이리`, `gengar`)이나 도감 번호(`94`)로 찾아 **추가**를 누르면 바로 화면에 나옵니다. 그림이 미리 들어 있어서 인터넷이 필요 없고, 음성·텍스트 명령("파이리 크롬 화염방사")과 트레이 메뉴에도 곧바로 들어갑니다.
+
+- 타입은 실제 타입을 따르고, 기술은 같은 타입의 기술 4개 + 몸통박치기를 씁니다. 기술 연출이 없는 타입(독·땅·벌레·고스트)은 비슷한 타입(악·바위·풀) 기술을 씁니다.
+- 추가한 포켓몬은 같은 곳에서 **삭제**할 수 있고, 목록은 설정(`%APPDATA%\poke-ground`)에 남아 새 버전으로 바꿔도 유지됩니다.
+- 배포판에 그림이 없는 포켓몬(만들 때 PMD SpriteCollab에 아직 그림이 없던 45종 등)은 **[받아서 추가]** 로 표시됩니다. 누르면 그때 SpriteCollab에서 그림을 받아 추가하고(인터넷 필요), 아직 그림이 없으면 그렇다고 알려 줍니다. 받은 그림은 `%APPDATA%\poke-ground\dex`에 남아서 지웠다 다시 추가할 때는 인터넷이 필요 없어요.
+- 직접 추가한 포켓몬은 울음소리가 없어요.
+
+### 내 그림으로 추가 (도감 포켓몬·창작 캐릭터)
+
+같은 **＋ 포켓몬** 창의 **내 그림으로 추가**에서 직접 가진 그림으로 포켓몬을 만들 수 있어요. 인터넷이 필요 없습니다.
+
+1. **그림·zip 고르기** 또는 **PMD 폴더**로 그림을 고릅니다.
+   - **이미지 한 장** (PNG·GIF·WebP·JPG): 아무 그림이나 됩니다. 화면에서 키 72px 정도로 맞추고, 걸을 때 통통 튀기·기술 쓸 때 쑥 커지기·숨쉬기 같은 움직임을 앱이 붙여 줘요. 움직이는 GIF는 그대로 움직입니다. 그림은 왼쪽을 본다고 보고, 오른쪽으로 갈 때 뒤집어요.
+   - **PMD 형식 스프라이트** (zip 또는 폴더): `AnimData.xml`과 `Walk-Anim.png` 같은 애니메이션 파일이 든 것 — [SpriteCollab](https://sprites.pmdcollab.org)에서 받은 것이나 직접 만든 스프라이트. 기본 포켓몬처럼 걷기·공격·잠자기 동작이 모두 나옵니다. SpriteCollab에 제출하는 형식 그대로 넣으면 돼요.
+     - **초상화**: SpriteCollab 형식의 **초상화 시트**(`portrait-XXXX.png`, 40px 칸 5×8)를 자동으로 감정별로 잘라 말풍선 얼굴로 씁니다. `Normal.png`, `Happy.png` 같은 감정별 파일도 됩니다. 없으면 얼굴 없이 말해요.
+     - 스프라이트 zip과 초상화 시트를 따로 갖고 있으면 고르는 창에서 **둘을 함께**(Ctrl+클릭) 고르세요. 한 zip·폴더에 같이 넣어도 됩니다.
+2. **이름**과 **타입**을 정하고 **추가**를 누릅니다. 타입에 맞는 기술을 쓰게 돼요.
+   - 도감 이름을 그대로 쓰면(예: `시비꼬`) 그 포켓몬으로 보고 타입과 영어 이름을 맞춰 줍니다. 도감에 없는 이름이면 창작 캐릭터가 돼요.
+   - 다른 포켓몬·기술·명령어와 겹치는 이름은 쓸 수 없어요.
+3. 고른 원본 파일은 그대로 두고 `%APPDATA%\poke-ground\creations`에 복사해 씁니다. 삭제하면 이 복사본만 지워져요.
 - **명령창**: 화면 오른쪽 아래 몬스터볼을 누르거나 `Ctrl + Alt + Space`. `Esc`로 닫습니다.
 - 포켓몬이 없는 곳은 클릭이 그대로 뒤쪽 프로그램으로 전달되니 평소처럼 컴퓨터를 쓸 수 있어요.
 
@@ -106,17 +129,18 @@ src/main/main.js       Electron 메인: 투명 오버레이 창, 트레이, 단�
 src/main/whisper.js    음성인식 워커 관리 ─ whisper_worker.py: Faster-Whisper small(CPU INT8) 상주 프로세스
 src/main/scanner.ps1   화면 객체 스캐너(상주 PowerShell) ─ scanner.cs: 창 목록·바탕화면 아이콘 좌표
 src/shared/parser.mjs  명령 해석(한글 자모 퍼지매칭으로 오타/오인식 보정), 대상 찾기
-src/shared/data.mjs    포켓몬·기술·행동·리액션 정의
+src/shared/data.mjs    포켓몬·기술·행동·리액션 정의 ─ dex.mjs: 도감에서 추가하는 포켓몬, pokedex.mjs: 전국도감 표(자동 생성)
 src/renderer/          포켓몬 애니메이션(pokemon.mjs), 기술 이펙트(fx.mjs), 음성(speech.mjs), 앱(app.mjs)
-scripts/               첫 실행 준비(setup.ps1), 음성인식 설치(setup-whisper.ps1/.py), 오프라인 배포판(make-offline.ps1), 에셋 다운로드
+scripts/               첫 실행 준비(setup.ps1), 음성인식 설치(setup-whisper.ps1/.py), 오프라인 배포판(make-offline.ps1), 에셋 다운로드(fetch-assets, fetch-dex)
 test/                  명령 해석 테스트 (npm test)
 ```
 
-포켓몬을 추가하려면 `src/shared/data.mjs`의 `POKEMON`에 도감 번호·이름·타입·별칭·기술을 한 줄 추가하고 `npm run fetch-assets`를 실행하세요. 다운로드 스크립트와 트레이 메뉴는 이 목록을 그대로 읽습니다.
+사용자는 앱의 **＋ 포켓몬**으로 추가하면 됩니다. 소스에서 실행할 때 그림이 없으면 `npm run fetch-dex`(git 필요, 약 300MB)로 받으세요. 울음소리·별칭·기술을 직접 다듬은 **기본 포켓몬**으로 넣으려면 `src/shared/data.mjs`의 `POKEMON`에 한 줄 추가하고 `npm run fetch-assets`를 실행하세요.
 
 ## 에셋 출처와 라이선스
 
-- 스프라이트·초상화: [PMD SpriteCollab](https://sprites.pmdcollab.org) — **CC BY-NC 4.0** (비상업적 사용, 출처 표기). 포켓몬별 제작자는 `assets/pokemon/*/CREDITS.txt`에 있습니다.
+- 스프라이트·초상화: [PMD SpriteCollab](https://sprites.pmdcollab.org) — **CC BY-NC 4.0** (비상업적 사용, 출처 표기). 포켓몬별 제작자는 `assets/pokemon/*/CREDITS.txt`, `assets/dex/*/CREDITS.txt`에 있습니다.
+- 전국도감 이름·타입: [PokeAPI](https://github.com/PokeAPI/pokeapi) 데이터 — BSD-3-Clause
 - 울음소리: [PokeAPI/cries](https://github.com/PokeAPI/cries) (최신 게임 음원). 게임 원음이라 저장소에는 포함하지 않고 `npm run fetch-assets`로 받습니다. 트레이 메뉴 '울음소리'로 끌 수 있어요.
 - 음성 모델: [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) (OpenAI Whisper small의 CTranslate2 변환) — MIT, 엔진 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — MIT
 - 예비 음성 모델: [Vosk](https://alphacephei.com/vosk/models) `vosk-model-small-ko-0.22` — Apache 2.0

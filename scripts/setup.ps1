@@ -95,6 +95,17 @@ try {
     if ($LASTEXITCODE -ne 0) { Write-Host '울음소리를 받지 못했어요 — 소리 없이 실행합니다' -ForegroundColor Yellow }
   }
 
+  # ---- 3-2) 도감에서 추가할 수 있는 포켓몬 그림 (git 필요, 없어도 기본 포켓몬은 쓸 수 있으므로 실패해도 계속) ----
+  if (-not (Test-Path 'assets\dex\index.json')) {
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+      Write-Host '도감 포켓몬 그림 준비 중 (처음 1회 약 300MB)...'
+      & npm run fetch-dex
+      if ($LASTEXITCODE -ne 0) { Write-Host '도감 포켓몬 그림을 받지 못했어요 — 기본 포켓몬만 쓸 수 있어요' -ForegroundColor Yellow }
+    } else {
+      Write-Host 'git이 없어서 도감 포켓몬 그림은 건너뜁니다 (기본 포켓몬만 사용)' -ForegroundColor Yellow
+    }
+  }
+
   # ---- 4) 음성인식 (안 되면 텍스트 명령만 쓰면 되므로 실패해도 계속) ----
   $whisperOk = Test-Path 'assets\models\whisper-small\model.bin'
   if (-not $whisperOk) {

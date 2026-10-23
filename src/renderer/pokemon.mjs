@@ -13,7 +13,7 @@ const CRY_PITCH = {
 };
 
 export async function loadSpecies(key) {
-  const base = `/assets/pokemon/${key}/`;
+  const base = POKEMON[key]?.assets || `/assets/pokemon/${key}/`;   // 사용자가 추가한 포켓몬은 assets/dex/
   const data = await fetch(base + 'anims.json').then((r) => r.json());
   const sizes = {};
   await Promise.all([...new Set(Object.values(data.anims).map((a) => a.file))].map((f) => new Promise((res) => {
@@ -66,6 +66,8 @@ export class Mon {
     Object.assign(this.hit.style, { width: this.bodyW * 0.85 + 'px', height: this.bodyH * 0.75 + 'px', top: -this.bodyH * 0.32 + 'px' });
     this.bubble.style.bottom = this.bodyH * 0.75 + 12 + 'px';
     app.stage.appendChild(this.el);
+    // 사용자가 넣은 큰 그림을 줄일 때는 픽셀 모양보다 부드럽게 줄이는 편이 낫다
+    if (this.def.simple && this.S < 2) this.sprite.style.imageRendering = 'auto';
     this.setAnim('Idle');
   }
 
@@ -142,8 +144,11 @@ export class Mon {
 
   // ---------- 말풍선 & 리액션 ----------
   say({ emotion = 'Normal', text = '', cry = true }) {
-    const emo = this.sp.emotions.includes(emotion) ? emotion : 'Normal';
-    this.bubble.querySelector('img').src = `${this.sp.base}portrait/${emo}.png`;
+    // 그 감정의 얼굴이 없으면 보통 얼굴, 그것도 없으면(직접 넣은 그림) 있는 얼굴 아무거나
+    const emo = this.sp.emotions.includes(emotion) ? emotion : this.sp.emotions.includes('Normal') ? 'Normal' : this.sp.emotions[0];
+    const img = this.bubble.querySelector('img');
+    img.hidden = !this.sp.emotions.length;   // 초상화 없이 넣은 PMD 그림은 얼굴 없이 말한다
+    if (!img.hidden) img.src = `${this.sp.base}portrait/${emo}.png`;
     this.bubble.querySelector('.cry').textContent = cry ? pick(this.def.cries) : '';
     if (cry) this.playCry(emo);
     this.bubble.querySelector('.sum').textContent = text;
@@ -276,13 +281,34 @@ export class Mon {
     }
   }
 
+  /**
+   * 이미지 한 장짜리(def.simple)는 프레임이 없으니 움직임을 흉내 낸다:
+   * 걸을 때 통통 튀기, 기술·리액션 때 쑥 커졌다 돌아오기, 가만히 있을 때 숨쉬기, 가는 쪽으로 돌아보기
+   */
+  simpleMotion(an) {
+    const t = performance.now() / 1000;
+    let lift = 0, sx = 1, sy = 1;
+    if (an.name === 'Walk') lift = Math.abs(Math.sin(t * 9)) * 6;
+    else if (!an.loop) {
+      const total = an.a.durations.reduce((a, b) => a + b, 0);
+      const done = an.a.durations.slice(0, an.frame).reduce((a, b) => a + b, 0) + an.t;
+      const k = Math.sin(Math.min(1, done / total) * Math.PI);
+      sx = 1 + 0.18 * k; sy = 1 + 0.18 * k; lift = 8 * k;
+    } else sy = 1 + 0.025 * Math.sin(t * 2.4);
+    // 공식 그림처럼 왼쪽을 보고 있다고 보고, 오른쪽으로 갈 때 뒤집는다
+    if ([7, 0, 1].includes(this.dir)) sx = -sx;
+    return `translateY(${-lift}px) scale(${sx}, ${sy})`;
+  }
+
   render() {
     if (this.hidden) { this.el.classList.add('hidden'); return; }
     this.el.classList.remove('hidden');
     const an = this.anim;
     const row = an.a.rows >= 8 ? OCT_TO_ROW[this.dir] : 0;
     this.sprite.style.backgroundPosition = `${-an.frame * an.a.w * this.S}px ${-row * an.a.h * this.S}px`;
-    this.sprite.style.top = -(this.bodyH * 0.3 + this.z) + 'px';
+    if (this.def.simple) this.sprite.style.transform = `translate(-50%, -50%) ${this.simpleMotion(an)}`;
+    // PMD 프레임은 발밑에 여백이 있어 30%만 올리고, 여백 없는 이미지 한 장은 아랫변이 그림자에 닿게 절반 올린다
+    this.sprite.style.top = -(this.bodyH * (this.def.simple ? 0.5 : 0.3) + this.z) + 'px';
     this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
     this.el.style.zIndex = Math.round(this.y);
     // 화면 가장자리에서 말풍선이 잘리지 않게

@@ -4,6 +4,7 @@ import { mkdir, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { POKEMON as DEFS } from '../src/shared/data.mjs';
+import { EMOTIONS, parseAnimData } from '../src/shared/sprites.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master';
@@ -11,11 +12,6 @@ const CRIES = 'https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemo
 
 // 포켓몬 목록은 src/shared/data.mjs 한 곳에서 관리 (key → 4자리 도감 번호)
 const POKEMON = Object.fromEntries(Object.entries(DEFS).map(([k, d]) => [k, String(d.dex).padStart(4, '0')]));
-
-const EMOTIONS = [
-  'Normal', 'Happy', 'Pain', 'Angry', 'Worried', 'Sad', 'Crying', 'Shouting',
-  'Teary-Eyed', 'Determined', 'Joyous', 'Inspired', 'Surprised', 'Dizzy', 'Sigh', 'Stunned',
-];
 
 async function get(url) {
   for (let i = 0; i < 3; i++) {
@@ -31,27 +27,6 @@ async function get(url) {
 }
 
 const exists = (p) => access(p).then(() => true, () => false);
-
-function parseAnimData(xml) {
-  const anims = {};
-  const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1];
-  for (const block of xml.match(/<Anim>[\s\S]*?<\/Anim>/g) || []) {
-    const name = tag(block, 'Name');
-    const copyOf = tag(block, 'CopyOf');
-    if (copyOf) { anims[name] = { copyOf }; continue; }
-    anims[name] = {
-      file: `${name}-Anim.png`,
-      w: +tag(block, 'FrameWidth'),
-      h: +tag(block, 'FrameHeight'),
-      durations: [...block.matchAll(/<Duration>(\d+)<\/Duration>/g)].map((m) => +m[1]),
-      hit: tag(block, 'HitFrame') != null ? +tag(block, 'HitFrame') : null,
-    };
-  }
-  for (const [name, a] of Object.entries(anims)) {
-    if (a.copyOf) anims[name] = { ...anims[a.copyOf] };
-  }
-  return anims;
-}
 
 async function fetchPokemon(key, id) {
   const dir = path.join(ROOT, 'assets', 'pokemon', key);

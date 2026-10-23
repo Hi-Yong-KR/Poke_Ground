@@ -202,6 +202,12 @@ export class Voice {
     });
   }
 
+  /** 포켓몬이 추가·삭제됐을 때 인식 힌트(Whisper)나 문법(Vosk)을 새 이름으로 바꾼다 */
+  refreshWords() {
+    if (this.engine === 'whisper' && this.stt) this.stt.hotwords(voiceKeywords());
+    else if (this.engine === 'vosk' && this.ready) this.useEngine('vosk');   // 문법은 인식기를 다시 만들어야 바뀐다
+  }
+
   /** 엔진을 바꾸거나(null이면 키 상태로 다시 고름) 다시 연결 */
   useEngine(engine = null) {
     this.teardown();

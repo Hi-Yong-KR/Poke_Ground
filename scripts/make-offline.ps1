@@ -4,7 +4,7 @@
 #   - Electron 본체 (실행에 Node.js는 필요 없다)
 #   - 휴대용 파이썬 + faster-whisper (venv는 다른 PC로 옮길 수 없어서 파이썬 자체에 설치)
 #   - Visual C++ 런타임 DLL을 python.exe 옆에 둔다 (app-local 배포: 설치·관리자 권한 불필요)
-#   - Whisper small 모델, 스프라이트
+#   - Whisper small 모델, 스프라이트 (기본 27마리 + 도감에서 추가할 수 있는 전부, assets\dex)
 # 울음소리(게임 원음)는 저작권 때문에 기본으로 빼고, -IncludeCries 를 주면 넣는다.
 # 사용법: npm run make-offline   (또는 powershell -File scripts\make-offline.ps1 [-IncludeCries])
 # ※ PowerShell 5.1이 한글을 읽으려면 이 파일은 UTF-8 BOM이어야 한다.
@@ -33,7 +33,7 @@ function Copy-Tree([string]$from, [string]$to, [string[]]$exclude = @()) {
 Step '준비물 확인'
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'setup.ps1')
 if ($LASTEXITCODE -ne 0) { throw '준비 과정(setup.ps1) 실패' }
-foreach ($f in 'node_modules\electron\dist\electron.exe', 'assets\models\whisper-small\model.bin') {
+foreach ($f in 'node_modules\electron\dist\electron.exe', 'assets\models\whisper-small\model.bin', 'assets\dex\index.json') {
   if (-not (Test-Path (Join-Path $Root $f))) { throw "없음: $f" }
 }
 foreach ($d in $VcDlls) {
@@ -47,8 +47,18 @@ New-Item -ItemType Directory -Force $Stage | Out-Null
 
 # 2) 휴대용 파이썬 (uv가 받는 python-build-standalone은 폴더째 옮겨도 동작한다)
 Step '휴대용 파이썬 준비'
-$py = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'setup-whisper.ps1') -Private -PythonOnly | Select-Object -Last 1
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path $py)) { throw "휴대용 파이썬을 준비하지 못했어요 (코드 $LASTEXITCODE, 경로 '$py')" }
+# 가끔 첫 시도만 실패하고 바로 다시 하면 되는 경우가 있어 한 번 더 시도하고, 실패하면 출력을 그대로 보여 준다
+$py = $null
+foreach ($try in 1, 2) {
+  $ErrorActionPreference = 'Continue'   # 5.1은 Stop일 때 네이티브 stderr를 2>&1로 받으면 바로 예외가 된다
+  $out = @(& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'setup-whisper.ps1') -Private -PythonOnly 2>&1)
+  $code = $LASTEXITCODE
+  $ErrorActionPreference = 'Stop'
+  $last = if ($out.Count) { "$($out[-1])".Trim() } else { '' }
+  if ($code -eq 0 -and $last -and (Test-Path $last)) { $py = $last; break }
+  Write-Host "휴대용 파이썬 준비 실패 ($try/2, 코드 $code):`n$($out -join "`n")" -ForegroundColor Yellow
+}
+if (-not $py) { throw '휴대용 파이썬을 준비하지 못했어요' }
 $PyStage = Join-Path $App 'runtime\python'
 Copy-Tree (Split-Path -Parent $py) $PyStage
 Remove-Item (Join-Path $PyStage 'Lib\EXTERNALLY-MANAGED') -ErrorAction SilentlyContinue   # uv가 붙인 pip 설치 금지 표시
@@ -68,6 +78,7 @@ Copy-Tree (Join-Path $Root 'src') (Join-Path $App 'src') @('*.pyc')
 $cries = if ($IncludeCries) { @() } else { @('cry.ogg') }
 Copy-Tree (Join-Path $Root 'assets\pokemon') (Join-Path $App 'assets\pokemon') $cries
 Copy-Tree (Join-Path $Root 'assets\models\whisper-small') (Join-Path $App 'assets\models\whisper-small')
+Copy-Tree (Join-Path $Root 'assets\dex') (Join-Path $App 'assets\dex')   # 사용자가 추가할 수 있는 모든 포켓몬 그림
 Remove-Item -Recurse -Force (Join-Path $App 'assets\models\whisper-small\.cache') -ErrorAction SilentlyContinue
 Copy-Tree (Join-Path $Root 'node_modules\electron\dist') (Join-Path $App 'node_modules\electron\dist')
 Copy-Tree (Join-Path $Root 'node_modules\vosk-browser') (Join-Path $App 'node_modules\vosk-browser')

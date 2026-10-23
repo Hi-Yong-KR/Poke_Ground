@@ -1,5 +1,5 @@
 // 메인 프로세스: 투명 오버레이 창, 트레이, 전역 단축키, 화면 객체 스캐너
-const { app, BrowserWindow, ipcMain, screen, Tray, Menu, globalShortcut, session, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, Tray, Menu, globalShortcut, session, nativeImage, shell, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -10,6 +10,7 @@ const { Whisper } = require('./whisper.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 let POKEMON = {};   // src/shared/data.mjs 에서 읽어 옴 (포켓몬 목록은 그곳 한 곳에서 관리)
+let applyCustom = () => [];   // src/shared/dex.mjs: 사용자가 추가한 포켓몬(config.custom)을 POKEMON에 반영
 const HOTKEY = 'Control+Alt+Space';
 
 let win = null;
@@ -33,7 +34,70 @@ function saveConfig() {
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.json': 'application/json', '.gz': 'application/gzip', '.ogg': 'audio/ogg',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',   // 사용자가 넣은 그림
 };
+// 도감 포켓몬 그림은 앱에 들어 있는 것(assets/dex)과 앱에서 받은 것(userData/dex)을 같은 /assets/dex/ 주소로 낸다
+const DEX_URL = '/assets/dex/';
+const userDex = () => path.join(app.getPath('userData'), 'dex');
+let listDownloaded = async () => [];   // src/main/dexdownload.mjs
+let downloadDex = async () => 'missing';
+let importCreation, deleteCreation;   // src/main/creations.mjs
+const userCreations = () => path.join(app.getPath('userData'), 'creations');
+
+// 사용자가 직접 넣는 그림 (이미지 한 장 또는 PMD zip·폴더) → userData/creations/<id>/, /user/<id>/ 로 서빙
+ipcMain.handle('creation-pick', async (_e, folder) => {
+  const r = await dialog.showOpenDialog(win, folder
+    ? { title: 'PMD 스프라이트 폴더 고르기', properties: ['openDirectory'] }
+    // 여러 개 고르기: SpriteCollab에서 따로 받은 스프라이트 zip + 초상화 시트(portrait-XXXX.png)를 한 번에
+    : { title: '그림 또는 PMD zip 고르기 (초상화 시트와 함께 여러 개 골라도 돼요)', properties: ['openFile', 'multiSelections'], filters: [{ name: '그림 또는 zip', extensions: ['png', 'gif', 'webp', 'jpg', 'jpeg', 'zip'] }] });
+  return r.canceled ? null : r.filePaths;
+});
+// 초상화 시트를 칸별 PNG로 자른다. 비어 있는(완전히 투명한) 칸은 null
+function sliceSheet(file, { size, cols, rows }) {
+  const img = nativeImage.createFromPath(file);
+  const { width, height } = img.getSize();
+  const tiles = [];
+  for (let i = 0; i < cols * rows; i++) {
+    const x = (i % cols) * size, y = Math.floor(i / cols) * size;
+    if (x + size > width || y + size > height) { tiles.push(null); continue; }
+    const tile = img.crop({ x, y, width: size, height: size });
+    const bgra = tile.toBitmap();
+    let used = false;
+    for (let p = 3; p < bgra.length && !used; p += 4) used = bgra[p] > 0;
+    tiles.push(used ? tile.toPNG() : null);
+  }
+  return tiles;
+}
+
+ipcMain.handle('creation-import', async (_e, src) => {
+  try { return { ok: true, ...await importCreation(src, userCreations(), { sliceSheet }) }; } catch (e) {
+    if (!e.user) console.error('[creation]', e);
+    return { ok: false, error: e.user ? e.message : `가져오지 못했어요 (${e.message})` };
+  }
+});
+ipcMain.handle('creation-delete', (_e, id) => deleteCreation(id, userCreations()));
+
+// 앱 안에서 그림 받기: { status: 'ok' | 'missing' | 'error', message }
+ipcMain.handle('dex-download', async (_e, dex) => {
+  try { return { status: await downloadDex(dex, userDex()) }; } catch (e) { return { status: 'error', message: e.message }; }
+});
+
+function sendFile(file, res, onMissing) {
+  fs.stat(file, (err, st) => {
+    if (err || !st.isFile()) { if (onMissing) onMissing(); else { res.writeHead(404); res.end(); } return; }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Content-Length': st.size });
+    fs.createReadStream(file).pipe(res);
+  });
+}
+
+async function sendDexIndex(res) {
+  let bundled = [];
+  try { bundled = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets', 'dex', 'index.json'), 'utf8')); } catch { /* 그림 없이 실행 */ }
+  const all = [...new Set([...bundled, ...await listDownloaded(userDex())])].sort((a, b) => a - b);
+  res.writeHead(200, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store' });
+  res.end(JSON.stringify(all));
+}
+
 function startServer() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -42,11 +106,14 @@ function startServer() {
       if (!file.startsWith(ROOT) || /node_modules[\\/](?!vosk-browser)/.test(path.relative(ROOT, file))) {
         res.writeHead(403); res.end(); return;
       }
-      fs.stat(file, (err, st) => {
-        if (err || !st.isFile()) { res.writeHead(404); res.end(); return; }
-        res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Content-Length': st.size });
-        fs.createReadStream(file).pipe(res);
-      });
+      if (url === `${DEX_URL}index.json`) { sendDexIndex(res); return; }
+      if (url.startsWith('/user/')) {
+        const f = path.normalize(path.join(userCreations(), url.slice('/user/'.length)));
+        if (f.startsWith(userCreations() + path.sep)) sendFile(f, res); else { res.writeHead(403); res.end(); }
+        return;
+      }
+      const fallback = url.startsWith(DEX_URL) && path.normalize(path.join(userDex(), url.slice(DEX_URL.length)));
+      sendFile(file, res, fallback && fallback.startsWith(userDex()) ? () => sendFile(fallback, res) : null);
     });
     server.listen(0, '127.0.0.1', () => resolve(server.address().port));
   });
@@ -141,7 +208,12 @@ ipcMain.on('stt-hotwords', (_e, list) => whisper.setHotwords(list));
 ipcMain.handle('stt-transcribe', (_e, pcm) => whisper.transcribe(pcm));
 
 ipcMain.handle('get-config', () => config);
-ipcMain.on('set-config', (_e, patch) => { config = { ...config, ...patch }; saveConfig(); buildTrayMenu(); });
+ipcMain.on('set-config', (_e, patch) => {
+  config = { ...config, ...patch };
+  if (patch.custom || patch.creations) applyCustom(config.custom, config.creations);
+  saveConfig();
+  buildTrayMenu();
+});
 ipcMain.on('focus-window', () => { if (win) { win.focus(); } });
 ipcMain.on('blur-window', () => { if (win) win.blur(); });
 
@@ -159,21 +231,10 @@ function menuTemplate() {
   return [
     { label: `명령창 열기 (${HOTKEY.replace('Control', 'Ctrl')})`, click: () => { win.focus(); send('toggle-bar', true); } },
     { type: 'separator' },
+    // 체크 메뉴는 누를 때마다 닫혀서 여러 마리 고르기가 불편하다 → 명령창의 파티 창을 연다
     {
-      label: `포켓몬 고르기 (${config.party.length}/${Object.keys(POKEMON).length})`,
-      submenu: Object.entries(POKEMON).flatMap(([k, d], i) => [
-        // 처음 5마리 / 이브이 진화형 / 그 밖의 친구들 사이에 구분선
-        ...(i === 5 || i === 13 ? [{ type: 'separator' }] : []),
-        {
-          label: d.name, type: 'checkbox', checked: config.party.includes(k),
-          click: (item) => {
-            config.party = item.checked ? [...new Set([...config.party, k])] : config.party.filter((x) => x !== k);
-            saveConfig();
-            buildTrayMenu();
-            send('party', config.party);
-          },
-        },
-      ]),
+      label: `포켓몬 고르기... (${config.party.length}/${Object.keys(POKEMON).length})`,
+      click: () => { win.focus(); send('party-picker'); },
     },
     { type: 'separator' },
     { label: '음성인식', type: 'checkbox', checked: config.voice, click: (item) => { config.voice = item.checked; saveConfig(); send('voice', config.voice); } },
@@ -222,7 +283,11 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.whenReady().then(async () => {
     ({ POKEMON } = await import(pathToFileURL(path.join(ROOT, 'src', 'shared', 'data.mjs')).href));
+    ({ applyCustom } = await import(pathToFileURL(path.join(ROOT, 'src', 'shared', 'dex.mjs')).href));
+    ({ downloadDex, listDownloaded } = await import(pathToFileURL(path.join(__dirname, 'dexdownload.mjs')).href));
+    ({ importCreation, deleteCreation } = await import(pathToFileURL(path.join(__dirname, 'creations.mjs')).href));
     loadConfig();
+    applyCustom(config.custom, config.creations);
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
     startScanner();

@@ -11,6 +11,7 @@ npm install                 # electron, vosk-browser
 npm run setup               # fetch-assets(스프라이트·초상화·울음소리) + fetch-whisper(.venv에 faster-whisper 설치 + small 모델 480MB; 파이썬이 없으면 uv로 .python에 받음)
 npm run fetch-voice         # 예비용 Vosk 한국어 모델 87MB (Whisper를 못 쓸 때만 필요)
 npm start                   # 앱 실행
+npm run fetch-dex           # 도감에서 추가할 수 있는 포켓몬 그림 → assets/dex (git 부분 받기, 약 300MB)
 npm run make-offline        # 오프라인 배포판 dist/PokeGround-offline.zip (받는 PC는 인터넷 불필요)
 start.bat                   # 배포용 진입점: 준비가 다 됐으면 바로 실행, 아니면 scripts/setup.ps1(Node 없으면 .node에 받기 → npm install → 에셋 → Whisper)
 npm test                    # node --test test/parser.test.mjs
@@ -29,10 +30,13 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
   - 화면 객체 인식: 상주 PowerShell `scanner.ps1`(+ `scanner.cs` Add-Type)에 stdin으로 `scan`을 보내면 JSON 한 줄로 창(EnumWindows+DWM 프레임)과 바탕화면 아이콘(SysListView32를 원격 메모리로 조회)을 돌려준다. 좌표는 물리 픽셀 → main에서 `screenToDipRect`로 DIP·오버레이 기준으로 변환.
   - 마이크 진단(`mic-diagnose`)은 장치 상태와 Windows 개인정보 레지스트리를 **읽기만** 한다.
 - **공유 로직** `src/shared/` (렌더러·Node 테스트·스크립트가 함께 import)
-  - `data.mjs`: 포켓몬(도감번호 `dex`, 타입, 별칭, 울음 글자, 기술), 기술(`fx` 연출 키, `melee`, `self`), 행동, 리액션, 타입 상성. **포켓몬 목록의 유일한 출처** — 다운로드 스크립트와 트레이 메뉴가 여기서 읽는다.
+  - `data.mjs`: 포켓몬(도감번호 `dex`, 타입, 별칭, 울음 글자, 기술), 기술(`fx` 연출 키, `melee`, `self`), 행동, 리액션, 타입 상성. **기본 포켓몬 목록의 유일한 출처** — 다운로드 스크립트와 트레이 메뉴가 여기서 읽는다.
+  - `dex.mjs`: 사용자가 **＋ 포켓몬**으로 추가하는 포켓몬. `config.custom`에 도감 번호만 저장하고, `applyCustom()`이 `pokedex.mjs`(전국도감 표, `scripts/build-pokedex.mjs`로 생성 — 손으로 고치지 말 것)로 정의를 만들어 `POKEMON`에 `dex0004` 같은 키로 넣는다(`custom: true`, `assets: /assets/dex/0004/`). 메인(트레이)·렌더러가 각각 부르며, 넣고 빼면 `parser.refreshEntries()`로 별칭 표를 다시 만든다. 다른 말과 겹치는 별칭은 뺀다. 그림은 `scripts/fetch-dex.mjs`가 SpriteCollab을 `.cache/`에 git sparse·blob:none으로 받아 앱이 쓰는 애니메이션(data.mjs의 모든 `anims` + 기본 동작)만 `assets/dex/<번호>/`에 복사하고, 쓸 수 있는 번호를 `assets/dex/index.json`에 적는다. 애니메이션 고르기·AnimData 해석은 `src/shared/sprites.mjs`(배포판에도 들어감).
+  - 앱 안에서 받기: 배포판에 없는 종은 ＋ 포켓몬의 [받아서 추가] → IPC `dex-download` → `src/main/dexdownload.mjs`가 raw.githubusercontent에서 같은 규칙으로 받아 `userData/dex/<번호>/`에 저장(임시 폴더에 다 받고 이름 변경). main의 정적 서버는 `/assets/dex/` 파일이 앱 폴더에 없으면 `userData/dex`에서 찾고, `index.json`은 두 곳을 합쳐서 낸다 — 그래서 렌더러·`makeMon`은 그림이 어디 있는지 몰라도 된다.
+  - 직접 그림 넣기(＋ 포켓몬의 내 그림으로 추가): IPC `creation-pick`(파일/폴더 대화상자) → `creation-import` → `src/main/creations.mjs`가 이미지 한 장(머리말로 크기 읽기, 한 프레임짜리 Idle·Walk·Attack을 만들고 키 72px 배율) 또는 PMD zip(System32 tar로 풂)·폴더(AnimData.xml을 얕은 곳부터 찾아 `pickAnims`, 초상화는 감정별 파일 이름으로 찾고 없으면 SpriteCollab 초상화 시트(40px 칸 5×8, 칸 번호=`SHEET.emotions` 순서, 아래 4줄은 반전본)를 메인의 `sliceSheet`(nativeImage crop)로 자름)·여러 개(스프라이트 zip + 시트를 함께 고르면 한 폴더에 모아 봄)를 `userData/creations/<id>/`에 앱 모양으로 복사. 목록은 `config.creations: [{ id, name, type, dex?, kind: 'pmd'|'image', scale }]`, `dex.mjs`의 `makeCreation()`이 `user_<id>` 키·`/user/<id>/` 주소로 등록. 이미지 한 장은 `def.simple` — `pokemon.mjs`의 `simpleMotion()`이 통통 튀기·커지기·숨쉬기·좌우 뒤집기로 움직임을 흉내 내고, 발밑 여백이 없어 50% 올려 그린다. 초상화가 없으면 말풍선 얼굴을 숨긴다.
   - `parser.mjs`: `parseCommand`(띄어쓴 단어 정확 일치 → 긴 별칭 부분 일치 → 한글 자모 퍼지 매칭 순), `resolveTarget`(대상 키워드/창 제목/아이콘 이름 → 화면 객체), `voiceGrammar`(Vosk 문법 단어 목록), `voiceKeywords`(Whisper 힌트 단어), `acceptVoice`(음성 소음 필터), `acceptTranscript`(Whisper 받아쓰기를 명령 단어로 맞춘 뒤 같은 필터).
 - **렌더러** `src/renderer/`
-  - `app.mjs`: 명령 실행 흐름의 중심. 명령 → `parseCommand` → (대상이 필요하면) `poke.scan()` → `resolveTarget` → 포켓몬 `run()` 작업 → `fx.move()`. 클릭/드래그/쓰다듬기, 음성·텍스트 우선순위, 장치 선택 UI도 여기.
+  - `app.mjs`: 명령 실행 흐름의 중심. 명령 → `parseCommand` → (대상이 필요하면) `poke.scan()` → `resolveTarget` → 포켓몬 `run()` 작업 → `fx.move()`. 클릭/드래그/쓰다듬기, 음성·텍스트 우선순위, 장치 선택 UI도 여기. 명령창 위쪽 창(🎒 파티·＋ 포켓몬·⚙ 장치)은 `openPanel()`으로 하나만 열린다. 파티 창은 `renderParty()`가 POKEMON 순서대로 타일을 그리고 `ensureMon`/`returnToBall`로 바로 켜고 끈다(두 함수가 파티가 바뀔 때 `renderParty()`를 불러 창을 맞춘다). 트레이의 "포켓몬 고르기..."는 체크 하위 메뉴(누를 때마다 닫혀 불편했음) 대신 `party-picker` 이벤트로 이 창을 연다.
   - `pokemon.mjs`: `Mon` 클래스. PMD 시트(행 8개=8방향, `OCT_TO_ROW`)를 CSS 배경으로 재생. 모든 행동은 `run(async fn)`으로 실행되고 새 작업이 이전 작업을 `cancel()`(대기 중 Promise를 `CANCEL`로 reject)한다. 대기는 반드시 `walkTo`/`playOnce`/`wait`를 써야 취소된다.
   - `fx.mjs`: 전체 화면 캔버스 파티클. `MOVE_FX[키]`는 `{duration, hitAt, update, draw, onHit}`이고 마지막 인자로 타입을 받아 `TYPE_COLORS`로 색을 정한다. 적중 시 `aftermath`가 타입별 여운을 남긴다.
   - `speech.mjs`: 엔진 `whisper`(기본) / `vosk`(Whisper 준비 안 됨·오류 시 예비). Whisper는 16kHz로 받아 음량 기반 발화 감지(`VAD_*`)로 말소리 구간만 잘라 `poke.stt.transcribe` → `acceptTranscript`. Vosk는 WASM 문법 제한 인식기 + 단어 신뢰도(`setWords`) → `acceptVoice`. 마이크가 막히면 진단 후 8초마다/`devicechange` 시 재연결.
@@ -52,7 +56,7 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
 - **오프라인 배포판**(`make-offline.ps1`): venv는 base 파이썬의 절대 경로에 묶여 옮길 수 없어서, uv의 휴대용 파이썬(`setup-whisper.ps1 -Private -PythonOnly`)을 `runtime\python`에 복사하고 거기에 직접 pip 설치한다(uv가 붙인 `EXTERNALLY-MANAGED` 삭제). VC++ DLL은 python.exe 옆에 app-local로 둔다. `whisper.js`는 `runtime\python\python.exe`가 있으면 그것을, 없으면 `.venv`를 쓴다. Electron 실행에 Node는 필요 없어 넣지 않는다. 울음소리는 `-IncludeCries` 때만.
 - **Visual C++ 런타임**: ctranslate2·onnxruntime이 `msvcp140.dll`/`msvcp140_1.dll`을 쓰는데 휠에 들어 있지 않다(새 Windows엔 없을 수 있음). `setup.ps1`이 System32에 없으면 `aka.ms/vs/17/release/vc_redist.x64.exe`를 받아 Authenticode 서명(Microsoft Corporation)을 확인하고 UAC로 설치, 끝나면 `.venv` 파이썬으로 `import faster_whisper`를 실제로 해 봐서 실패하면 Vosk를 받는다. 출처가 불분명한 PyPI `msvc-runtime` 패키지는 일부러 쓰지 않았다.
 - **start.bat**: cmd는 UTF-8 한글을 cp949로 읽어 줄이 깨질 수 있으므로 ASCII만 쓰고, CRLF여야 `goto`가 동작한다(.gitattributes로 고정). 한글 안내 문구는 `setup.ps1`(UTF-8 BOM)에서 낸다. `-PrivateNode`로 개인 Node 경로를 강제 테스트할 수 있다.
-- **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.node/`, `.python/`, `.venv/`, `assets/models/`(Whisper·Vosk), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.
+- **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.node/`, `.python/`, `.venv/`, `.cache/`, `assets/models/`(Whisper·Vosk), `assets/dex/`(약 280MB, fetch-dex로 생성), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.
 - 시스템 설정(Windows 마이크 개인정보·장치 사용 여부)은 앱이 바꾸지 않는다. 원인 표시와 `ms-settings:` 열기까지만 한다.
 
 ## 실행 중인 앱 디버깅
