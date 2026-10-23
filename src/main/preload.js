@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('poke', {
   quit: () => ipcRenderer.send('quit'),
   focus: () => ipcRenderer.send('focus-window'),
   blur: () => ipcRenderer.send('blur-window'),
+  barState: (open) => ipcRenderer.send('bar-state', open),
   stt: {
     info: () => ipcRenderer.invoke('stt-info'),
     hotwords: (list) => ipcRenderer.send('stt-hotwords', list),

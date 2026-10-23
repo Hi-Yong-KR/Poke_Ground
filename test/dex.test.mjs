@@ -69,6 +69,15 @@ test('직접 그림을 넣은 포켓몬: 도감 포켓몬·창작 캐릭터 모�
 
     applyCustom([4], [{ id: 'abc2', name: '나비', type: 'normal', kind: 'image' }]);
     assert.equal(POKEMON[creationKey('abc1')], undefined);
+
+    // 속성을 여러 개 고르면 대표 속성은 첫 번째, 기술은 속성마다 번갈아 고른다 (예전 설정의 type 하나도 읽는다)
+    applyCustom([], [{ id: 'abc3', name: '불물이', types: ['fire', 'water'], kind: 'image' }]);
+    const fw = POKEMON[creationKey('abc3')];
+    assert.equal(fw.type, 'fire');
+    assert.deepEqual(fw.types, ['fire', 'water']);
+    assert.deepEqual([...new Set(fw.moves.filter((k) => k !== 'tackle').map((k) => MOVES[k].type))], ['fire', 'water']);
+    applyCustom([], [{ id: 'abc2', name: '나비', type: 'normal', kind: 'image' }]);
+    assert.equal(POKEMON[creationKey('abc1')], undefined);
   } finally {
     applyCustom([]);
   }

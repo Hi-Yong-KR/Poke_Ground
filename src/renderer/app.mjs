@@ -4,7 +4,7 @@ import { Mon, loadSpecies, CRY_VOLUME } from './pokemon.mjs';
 import { Voice } from './speech.mjs';
 import { parseCommand, resolveTarget, aliasTaken } from '../shared/parser.mjs';
 import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, HIT_TEXT, SUPER, WEAK } from '../shared/data.mjs';
-import { DEX, TYPE_KO, applyCustom, searchDex, customKey, dexAssets, creationKey, builtinKeyOf } from '../shared/dex.mjs';
+import { DEX, TYPE_KO, applyCustom, searchDex, customKey, dexAssets, creationKey, creationTypes, builtinKeyOf } from '../shared/dex.mjs';
 
 const $ = (s) => document.querySelector(s);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -342,7 +342,7 @@ function attack(m, p, target, box) {
     moveId = Math.random() < 0.6 ? m.def.signature : pick(usable);
   }
   const mv = MOVES[moveId];
-  const can = m.def.moves.includes(moveId) || mv.type === m.def.type || (mv.type === 'normal' && !mv.self);
+  const can = m.def.moves.includes(moveId) || (m.def.moveTypes || [m.def.type]).includes(mv.type) || (mv.type === 'normal' && !mv.self);
   if (!can) return m.react('cant', { text: `${mv.name}?! ${CANT_TEXT[mv.type] || CANT_TEXT.normal}` });
 
   if (mv.self) {
@@ -391,9 +391,9 @@ function onHit(attacker, mv, target, aim, box) {
   if (!target) return;
   let text = pick(HIT_TEXT);
   if (target.mon) {
-    const tt = target.mon.def.type;
-    if ((SUPER[mv.type] || []).includes(tt)) text = '효과는 굉장했다!';
-    else if ((WEAK[mv.type] || []).includes(tt)) text = '효과가 별로인 듯하다...';
+    const tt = target.mon.def.types || [target.mon.def.type];   // 속성이 여럿이면 하나라도 맞으면
+    if (tt.some((t) => (SUPER[mv.type] || []).includes(t))) text = '효과는 굉장했다!';
+    else if (tt.some((t) => (WEAK[mv.type] || []).includes(t))) text = '효과가 별로인 듯하다...';
     target.mon.react('hurt', { text: `${attacker.name}의 ${mv.name}에 맞았다! 억울한 눈빛으로 쳐다본다` });
   }
   const el = document.createElement('div');
@@ -414,6 +414,7 @@ let lastTextAt = 0;
 
 function setBar(open) {
   bar.classList.toggle('collapsed', !open);
+  poke.barState(open);
   if (open) setTimeout(() => input.focus(), 30);
   else { input.blur(); poke.blur(); }
 }
@@ -559,8 +560,8 @@ async function refreshSttInfo() {
       : '꺼짐';
 }
 
-// ---- 도감 검색: 그림은 assets/dex(배포판에 미리 들어 있음), 한 번 부른 포켓몬은 config.custom 에 도감 번호로 저장 ----
-// 배포판에 그림이 없던 포켓몬은 [받아서 내보내기]로 SpriteCollab에서 그때 받는다 (메인 프로세스가 userData/dex 에 저장)
+// ---- 도감 포켓몬: 그림은 assets/dex(배포판에 미리 들어 있음), 한 번 부른 포켓몬은 config.custom 에 도감 번호로 저장 ----
+// 배포판에 그림이 없던 포켓몬은 파티 창에서 찾아 누르면 SpriteCollab에서 그때 받는다 (메인 프로세스가 userData/dex 에 저장)
 let dexReady = null;   // 그림이 준비된 도감 번호들 (assets/dex/index.json — 메인이 받아 둔 것까지 합쳐 준다)
 let dexHave = [];      // 마지막으로 읽은 그 목록(번호순) — 파티 창이 기다리지 않고 바로 그린다
 function dexAvailable() {
@@ -600,51 +601,36 @@ function dexButton(text, onClick, cls = '') {
   return b;
 }
 
-async function renderDex() {
-  const avail = await dexAvailable();
-  const box = $('#dex-results');
-  box.replaceChildren();
-  const q = $('#dex-q').value;
-  if (q.trim()) {
-    const hits = searchDex(q, 6);
-    if (!hits.length) box.append(dexNote('찾는 포켓몬이 없어요'));
-    for (const e of hits) {
-      const key = e.builtin || customKey(e.dex);
-      const b = app.mons.some((m) => m.key === key && !m.hidden) ? dexButton('나와 있음')
-        : e.builtin || avail.has(e.dex) ? dexButton('내보내기', () => addDex(e.dex))
-          : dexButton('받아서 내보내기', (ev) => downloadDex(e, ev.currentTarget));
-      box.append(dexRow(e, b));
-    }
-  }
+function renderDex() {
   const mine = $('#dex-mine');   // 직접 그림을 넣어 만든 포켓몬만 따로 지울 수 있다 (도감 포켓몬은 파티 창에서 넣고 뺀다)
   mine.replaceChildren();
   const made = app.config.creations || [];
   if (!made.length) mine.append(dexNote('아직 없어요 — 위에서 그림을 골라 만들어 보세요'));
   for (const c of made) {
-    mine.append(dexRow({ dex: c.dex, ko: c.name, types: [c.type] }, dexButton('삭제', () => removeCreation(c), 'del'), `/user/${c.id}/portrait/Normal.png`));
+    mine.append(dexRow({ dex: c.dex, ko: c.name, types: creationTypes(c) }, dexButton('삭제', () => removeCreation(c), 'del'), `/user/${c.id}/portrait/Normal.png`));
   }
 }
 
-async function downloadDex(e, button) {
-  button.disabled = true;
-  button.textContent = '받는 중…';
-  const r = await poke.dexDownload(e.dex);
+/** 파티 창에서 그림이 아직 없는 도감 포켓몬(p)을 누르면 받아서 바로 내보낸다 */
+async function downloadDex(p, tile) {
+  tile.querySelector('span').textContent = '받는 중…';
+  const r = await poke.dexDownload(p.dex);
   if (r.status === 'ok') {
     dexReady = null;   // 받은 것까지 다시 읽는다
-    await addDex(e.dex);
+    await dexAvailable();
+    await addDex(p.dex);
     return;
   }
   app.log(r.status === 'missing'
-    ? `${e.ko}: 아직 SpriteCollab에 쓸 수 있는 그림이 없어요. 그림이 생기면 다시 시도해 보세요`
-    : `${e.ko}: 그림을 받지 못했어요 — 인터넷 연결을 확인해 주세요 (${r.message})`, 'sys');
-  renderDex();
+    ? `${p.name}: 아직 SpriteCollab에 쓸 수 있는 그림이 없어요. 그림이 생기면 다시 시도해 보세요`
+    : `${p.name}: 그림을 받지 못했어요 — 인터넷 연결을 확인해 주세요 (${r.message})`, 'sys');
+  renderParty();
 }
 
 /** 도감 번호로 포켓몬을 내보낸다. 처음 부르는 포켓몬은 config.custom 에 등록해 이름으로도 부를 수 있게 한다 */
 async function addDex(dex, { announce = true } = {}) {
   registerDex([dex]);
   await ensureMon(builtinKeyOf(dex) || customKey(dex), { announce });   // 바로 화면에 등장하고 파티에도 들어간다
-  renderDex();
 }
 
 /** 아직 등록 안 된 도감 포켓몬을 등록한다 (여러 마리면 한 번에: 별칭 표·음성 단어를 한 번만 다시 만든다) */
@@ -683,16 +669,31 @@ function removeCreation(c) {
 
 // ---- 내 그림으로 추가: 이미지 한 장 또는 PMD 형식 zip·폴더. 메인이 userData/creations 에 복사해 둔다 ----
 let makeSrc = null;   // 고른 파일·폴더 경로 배열
-let makeDex = null;   // 이름이 도감 이름과 같으면 그 포켓몬으로 본다 (영어 이름 별칭, 기본 타입)
-for (const [k, v] of Object.entries(TYPE_KO)) $('#make-type').append(new Option(v, k));
-$('#make-type').value = 'normal';
+let makeDex = null;   // 이름이 도감 이름과 같으면 그 포켓몬으로 본다 (영어 이름 별칭, 기본 속성)
+let makeTypes = ['normal'];   // 고른 속성 (고른 순서, 첫 번째가 대표)
+const typeChips = Object.entries(TYPE_KO).map(([k, v]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = v; b.dataset.type = k;
+  b.addEventListener('click', () => {
+    makeTypes = makeTypes.includes(k) ? makeTypes.filter((t) => t !== k) : [...makeTypes, k];
+    makeCheck();
+  });
+  return b;
+});
+$('#make-types').append(...typeChips);
+makeCheck();
 
 function makeCheck() {
   const name = $('#make-name').value.trim();
   const e = [...DEX.values()].find((x) => x.ko === name);
-  if (e && e.dex !== makeDex) $('#make-type').value = e.types[0];
+  if (e && e.dex !== makeDex) makeTypes = [...e.types];
   makeDex = e ? e.dex : null;
-  const msg = name && aliasTaken(name) ? '이미 쓰는 이름이에요 (다른 포켓몬·기술·명령어와 겹쳐요)' : '';
+  for (const b of typeChips) {
+    b.classList.toggle('on', makeTypes.includes(b.dataset.type));
+    b.classList.toggle('main', makeTypes[0] === b.dataset.type && makeTypes.length > 1);
+  }
+  const msg = name && aliasTaken(name) ? '이미 쓰는 이름이에요 (다른 포켓몬·기술·명령어와 겹쳐요)'
+    : !makeTypes.length ? '속성을 하나 이상 골라 주세요' : '';
   $('#make-msg').textContent = msg;
   $('#make-add').disabled = !makeSrc || !name || !!msg;
 }
@@ -715,14 +716,14 @@ async function makeAdd() {
   const r = await poke.creationImport(makeSrc);
   btn.textContent = '추가';
   if (!r.ok) { makeCheck(); $('#make-msg').textContent = r.error; return; }
-  const c = { id: r.id, kind: r.kind, scale: r.scale, name: $('#make-name').value.trim(), type: $('#make-type').value, dex: makeDex };
+  const c = { id: r.id, kind: r.kind, scale: r.scale, name: $('#make-name').value.trim(), types: [...makeTypes], dex: makeDex };
   app.config.creations = [...(app.config.creations || []), c];
   applyCustom(app.config.custom, app.config.creations);
   poke.setConfig({ creations: app.config.creations });
   voice.refreshWords();
   await ensureMon(creationKey(c.id));
   app.log(`＋ ${c.name} — 내 그림으로 새 친구가 왔다! 이름을 불러 명령해 보세요`, 'sys');
-  makeSrc = null; makeDex = null;
+  makeSrc = null; makeDex = null; makeTypes = ['normal'];
   $('#make-name').value = '';
   $('#make-src').textContent = '그림 한 장 또는 PMD 스프라이트';
   makeCheck();
@@ -732,11 +733,10 @@ async function makeAdd() {
 $('#make-file').addEventListener('click', () => makePick(false));
 $('#make-folder').addEventListener('click', () => makePick(true));
 $('#make-name').addEventListener('input', makeCheck);
-$('#make-type').addEventListener('change', makeCheck);
 $('#make-add').addEventListener('click', makeAdd);
 
 $('#dex-btn').addEventListener('click', () => {
-  if (openPanel('dex')) { renderDex(); poke.focus(); setTimeout(() => $('#dex-q').focus(), 30); }
+  if (openPanel('dex')) renderDex();
 });
 
 // ---- 파티: 화면에 내보낼 포켓몬을 한 창에서 여러 마리 바로 켜고 끈다 (트레이 메뉴는 누를 때마다 닫혀서 불편했다) ----
@@ -744,20 +744,29 @@ const portraitOf = (k) => `${POKEMON[k].assets || `/assets/pokemon/${k}/`}portra
 
 /**
  * 파티 창에 보일 포켓몬 — 그림이 있는 모든 포켓몬을 구분 없이 도감 번호순으로 (번호 없는 내 그림은 맨 뒤).
- * key가 없는 것은 아직 한 번도 안 불러 본 도감 포켓몬: 누르면 addDex가 등록하고 내보낸다
+ * key가 없는 것은 아직 한 번도 안 불러 본 도감 포켓몬: 누르면 addDex가 등록하고 내보낸다.
+ * 찾는 중이면 그림이 아직 없는 도감 포켓몬(missing)도 보여 준다: 누르면 downloadDex가 받아서 내보낸다
  */
 function partyEntries(q) {
+  q = q.replace(/\s+/g, '');
   const num = /^#?0*(\d{1,4})$/.exec(q);
   const hit = (dex, names) => !q || (num ? dex === +num[1] : names.some((a) => a && a.toLowerCase().includes(q)));
   const list = [];
   for (const k of Object.keys(POKEMON)) {
     const d = POKEMON[k];
-    if (hit(d.dex, [d.name, ...d.aliases])) list.push({ key: k, dex: d.dex, name: d.name, src: portraitOf(k) });
+    const types = d.types || DEX.get(d.dex)?.types || [d.type];
+    if (hit(d.dex, [d.name, ...d.aliases])) list.push({ key: k, dex: d.dex, name: d.name, types, src: portraitOf(k) });
   }
   for (const n of dexHave) {
     const e = DEX.get(n);
     if (!e || builtinKeyOf(n) || POKEMON[customKey(n)]) continue;
-    if (hit(n, [e.ko, e.en])) list.push({ key: null, dex: n, name: e.ko, src: `${dexAssets(n)}portrait/Normal.png` });
+    if (hit(n, [e.ko, e.en])) list.push({ key: null, dex: n, name: e.ko, types: e.types, src: `${dexAssets(n)}portrait/Normal.png` });
+  }
+  if (q) {
+    const have = new Set(dexHave);
+    for (const e of searchDex(q, Infinity)) {
+      if (!e.builtin && !e.added && !have.has(e.dex)) list.push({ key: null, dex: e.dex, name: e.ko, types: e.types, src: null, missing: true });
+    }
   }
   return list.sort((a, b) => (a.dex ?? Infinity) - (b.dex ?? Infinity));
 }
@@ -768,31 +777,44 @@ function renderParty() {
   const list = partyEntries(q);
   $('#party-grid').replaceChildren(...list.map((p) => {
     const on = !!p.key && app.config.party.includes(p.key);
-    const tile = partyTile(p.name, p.src, on, on ? '누르면 몬스터볼로' : '누르면 화면에 내보내기');
+    const tile = partyTile(p, on, on ? '누르면 몬스터볼로' : p.missing ? '그림을 받아서 내보내기 (인터넷 필요)' : '누르면 화면에 내보내기', !!q);
+    if (p.missing) tile.classList.add('missing');
     tile.addEventListener('click', () => toggleParty(p, tile));
     return tile;
   }));
+  if (!list.length) $('#party-grid').append(dexNote('찾는 포켓몬이 없어요'));
   $('#party-count').textContent = `${app.config.party.length}/${q ? list.length : partyEntries('').length}`;
 }
 
-function partyTile(label, src, on, hint) {
+/** 찾는 중(detail)이면 이름 아래에 도감 번호와 속성을 함께 보여 준다 */
+function partyTile({ name: label, src, dex, types }, on, hint, detail) {
   const tile = document.createElement('button');
   tile.type = 'button';
   tile.className = `party-tile${on ? ' on' : ''}`;
-  tile.title = `${label} — ${hint}`;
+  const num = dex ? `#${String(dex).padStart(3, '0')}` : '★';
+  const ty = types.map((t) => TYPE_KO[t] || t).join('·');
+  tile.title = `${num} ${label} (${ty}) — ${hint}`;
   const img = new Image();
-  img.alt = ''; img.loading = 'lazy'; img.src = src;   // 천 마리 가까이 되므로 보이는 것만 불러온다
+  img.alt = ''; img.loading = 'lazy';   // 천 마리 가까이 되므로 보이는 것만 불러온다
   img.onerror = () => { img.style.visibility = 'hidden'; };
+  if (src) img.src = src; else img.style.visibility = 'hidden';   // 아직 그림을 안 받은 포켓몬
   const name = document.createElement('span');
   name.textContent = label;
   tile.append(img, name);
+  if (detail) {
+    const n = document.createElement('small');
+    n.textContent = num;
+    const t = document.createElement('small');
+    t.textContent = ty;
+    tile.append(n, t);
+  }
   return tile;
 }
 
 async function toggleParty(p, tile) {
   if (tile.classList.contains('busy')) return;
   tile.classList.add('busy');
-  if (!p.key) return addDex(p.dex);   // 파티에 들어가며 renderParty가 다시 그린다
+  if (!p.key) return p.missing ? downloadDex(p, tile) : addDex(p.dex);   // 파티에 들어가며 renderParty가 다시 그린다
   const m = app.mons.find((x) => x.key === p.key);
   if (app.config.party.includes(p.key)) {
     if (m && !m.hidden) returnToBall(m);
@@ -823,7 +845,6 @@ $('#party-btn').addEventListener('click', () => {
 dexAvailable().then(renderParty);
 $('#party-q').addEventListener('input', renderParty);
 $('#party-none').addEventListener('click', partyNone);
-$('#dex-q').addEventListener('input', renderDex);
 
 // ---- 종료 / 메뉴 ----
 function quitApp() {
@@ -852,7 +873,7 @@ $('#mic-btn').addEventListener('click', () => {
 });
 
 poke.onEvent(({ type, payload }) => {
-  if (type === 'toggle-bar') setBar(payload === true ? true : bar.classList.contains('collapsed'));
+  if (type === 'toggle-bar') setBar(typeof payload === 'boolean' ? payload : bar.classList.contains('collapsed'));
   else if (type === 'voice') (payload ? startVoice() : voice.stop());
   else if (type === 'sound') app.config.sound = payload;
   else if (type === 'cries') {   // 처음 실행할 때 메인이 울음소리를 받는다 (src/main/cries.mjs)

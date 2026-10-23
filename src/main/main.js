@@ -233,6 +233,8 @@ ipcMain.on('set-config', (_e, patch) => {
   saveConfig();
   buildTrayMenu();
 });
+let barOpen = true;   // 명령창이 열려 있는지 (렌더러가 알려 준다) — 메뉴 항목을 열기/닫기로 바꾼다
+ipcMain.on('bar-state', (_e, open) => { barOpen = open; buildTrayMenu(); });
 ipcMain.on('focus-window', () => { if (win) { win.focus(); } });
 ipcMain.on('blur-window', () => { if (win) win.blur(); });
 
@@ -248,8 +250,8 @@ function buildTrayMenu() {
 
 function menuTemplate() {
   return [
-    { label: `명령창 열기 (${HOTKEY.replace('Control', 'Ctrl')})`, click: () => { win.focus(); send('toggle-bar', true); } },
-    { type: 'separator' },   // 포켓몬 고르기는 명령창의 🎒 파티 버튼 한 곳에서만 한다
+    { label: `${barOpen ? '명령창 닫기' : '명령창 열기'} (${HOTKEY.replace('Control', 'Ctrl')})`, click: () => { if (!barOpen) win.focus(); send('toggle-bar', !barOpen); } },
+    { type: 'separator' },   // 포켓몬 고르기는 명령창의 📖 도감 버튼 한 곳에서만 한다
     { label: '음성인식', type: 'checkbox', checked: config.voice, click: (item) => { config.voice = item.checked; saveConfig(); send('voice', config.voice); } },
     { label: '울음소리', type: 'checkbox', checked: config.sound, click: (item) => { config.sound = item.checked; saveConfig(); send('sound', config.sound); } },
     { label: '개발자 도구', click: () => win.webContents.openDevTools({ mode: 'detach' }) },

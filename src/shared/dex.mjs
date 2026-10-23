@@ -30,16 +30,23 @@ export function builtinKeyOf(dex) {
 
 /** 이름·타입으로 포켓몬 정의를 만든다 (기본 27마리와 같은 모양). 도감 포켓몬과 사용자가 만든 포켓몬이 함께 쓴다 */
 function buildMon({ name, en = null, types, dex = null }) {
-  const type = types.find((t) => MOVE_TYPES.has(t))
-    || types.map((t) => STAND_IN[t]).find((t) => MOVE_TYPES.has(t)) || 'normal';
-  // 그 타입의 공격 기술 앞의 4개(데이터 순서상 대표 기술이 앞에 있다) + 몸통박치기
-  const ofType = Object.keys(MOVES).filter((k) => MOVES[k].type === type && !MOVES[k].self);
-  const moves = [...new Set([...ofType.slice(0, 4), 'tackle'])];
+  // 기술을 쓸 타입: 연출이 있는 타입을 먼저, 없는 타입(독·땅·벌레·고스트)은 비슷한 타입으로. 첫 번째가 대표 타입
+  const moveTypes = [...new Set([...types.filter((t) => MOVE_TYPES.has(t)),
+    ...types.map((t) => STAND_IN[t]).filter((t) => MOVE_TYPES.has(t))])];
+  if (!moveTypes.length) moveTypes.push('normal');
+  const type = moveTypes[0];
+  // 타입마다 공격 기술(데이터 순서상 대표 기술이 앞에 있다)을 번갈아 4개 + 몸통박치기
+  const ofType = moveTypes.map((t) => Object.keys(MOVES).filter((k) => MOVES[k].type === t && !MOVES[k].self));
+  const picked = [];
+  for (let i = 0; picked.length < 4 && ofType.some((l) => l[i]); i++) {
+    for (const l of ofType) if (l[i] && picked.length < 4) picked.push(l[i]);
+  }
+  const moves = [...new Set([...picked, 'tackle'])];
   // 다른 포켓몬·기술·행동 이름과 겹치는 별칭은 빼서 기존 명령을 망가뜨리지 않는다
   const aliases = [name, en && en.toLowerCase()].filter((a) => a && !aliasTaken(a));
   const head = [...name].slice(0, 2).join('');
   return {
-    dex, name, type, scale: 3, speed: 65,
+    dex, name, type, types, moveTypes, scale: 3, speed: 65,
     aliases: aliases.length ? aliases : [`${name}${dex ?? ''}`],
     cries: [`${head}!`, `${name}~!`, `${head}${head}!`, `${head}?`],
     moves, signature: moves[0], custom: true,
@@ -55,13 +62,15 @@ export function makeMon(dex) {
 
 /**
  * 사용자가 직접 그림을 넣은 포켓몬. c: config.creations 의 한 항목
- * { id, name, type, dex?, kind: 'pmd' | 'image', scale } — 그림은 메인이 /user/<id>/ 로 서빙한다
+ * { id, name, types: [타입…], dex?, kind: 'pmd' | 'image', scale } — 그림은 메인이 /user/<id>/ 로 서빙한다
+ * (예전 설정은 types 대신 type 하나만 있다)
  */
 export const creationKey = (id) => `user_${id}`;
+export const creationTypes = (c) => (c.types && c.types.length ? c.types : [c.type || 'normal']);
 export function makeCreation(c) {
   const en = c.dex ? DEX.get(c.dex)?.en : null;
   return {
-    ...buildMon({ name: c.name, en, types: [c.type], dex: c.dex ?? null }),
+    ...buildMon({ name: c.name, en, types: creationTypes(c), dex: c.dex ?? null }),
     scale: c.scale ?? 3, assets: `/user/${c.id}/`, creation: c.id,
     simple: c.kind === 'image',   // 이미지 한 장: 렌더러가 통통 튀기기·흔들기로 움직임을 흉내 낸다
   };
