@@ -9,13 +9,11 @@ const { pathToFileURL } = require('node:url');
 const { Whisper } = require('./whisper.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-let POKEMON = {};   // src/shared/data.mjs 에서 읽어 옴 (포켓몬 목록은 그곳 한 곳에서 관리)
-let applyCustom = () => [];   // src/shared/dex.mjs: 사용자가 추가한 포켓몬(config.custom)을 POKEMON에 반영
 const HOTKEY = 'Control+Alt+Space';
 
 let win = null;
 let tray = null;
-let config = { party: ['pikachu', 'charizard', 'squirtle'], voice: true, sound: true };
+let config = { party: ['pikachu'], voice: true, sound: true };   // 처음엔 피카츄 한 마리 — 나머지는 파티 창에서 고른다
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
 function loadConfig() {
@@ -210,7 +208,6 @@ ipcMain.handle('stt-transcribe', (_e, pcm) => whisper.transcribe(pcm));
 ipcMain.handle('get-config', () => config);
 ipcMain.on('set-config', (_e, patch) => {
   config = { ...config, ...patch };
-  if (patch.custom || patch.creations) applyCustom(config.custom, config.creations);
   saveConfig();
   buildTrayMenu();
 });
@@ -230,16 +227,9 @@ function buildTrayMenu() {
 function menuTemplate() {
   return [
     { label: `명령창 열기 (${HOTKEY.replace('Control', 'Ctrl')})`, click: () => { win.focus(); send('toggle-bar', true); } },
-    { type: 'separator' },
-    // 체크 메뉴는 누를 때마다 닫혀서 여러 마리 고르기가 불편하다 → 명령창의 파티 창을 연다
-    {
-      label: `포켓몬 고르기... (${config.party.length}/${Object.keys(POKEMON).length})`,
-      click: () => { win.focus(); send('party-picker'); },
-    },
-    { type: 'separator' },
+    { type: 'separator' },   // 포켓몬 고르기는 명령창의 🎒 파티 버튼 한 곳에서만 한다
     { label: '음성인식', type: 'checkbox', checked: config.voice, click: (item) => { config.voice = item.checked; saveConfig(); send('voice', config.voice); } },
     { label: '울음소리', type: 'checkbox', checked: config.sound, click: (item) => { config.sound = item.checked; saveConfig(); send('sound', config.sound); } },
-    { label: '모두 불러오기', click: () => send('summon') },
     { label: '개발자 도구', click: () => win.webContents.openDevTools({ mode: 'detach' }) },
     { type: 'separator' },
     { label: '포켓몬 그라운드 종료', click: () => app.quit() },
@@ -282,12 +272,9 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.whenReady().then(async () => {
-    ({ POKEMON } = await import(pathToFileURL(path.join(ROOT, 'src', 'shared', 'data.mjs')).href));
-    ({ applyCustom } = await import(pathToFileURL(path.join(ROOT, 'src', 'shared', 'dex.mjs')).href));
     ({ downloadDex, listDownloaded } = await import(pathToFileURL(path.join(__dirname, 'dexdownload.mjs')).href));
     ({ importCreation, deleteCreation } = await import(pathToFileURL(path.join(__dirname, 'creations.mjs')).href));
     loadConfig();
-    applyCustom(config.custom, config.creations);
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
     startScanner();

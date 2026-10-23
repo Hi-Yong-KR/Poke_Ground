@@ -1,7 +1,7 @@
 // 사용자가 추가하는 포켓몬: 도감 번호만 저장해 두고(config.custom), 실행할 때 도감 표로 정의를 만들어 POKEMON에 넣는다.
 // 그림은 scripts/fetch-dex.mjs 가 받아 둔 assets/dex/<4자리 번호>/ 를 쓴다.
 // 사용자가 직접 그림을 넣은 포켓몬(config.creations)도 같은 방식으로 만든다.
-// 메인 프로세스(트레이 메뉴)·렌더러·테스트가 함께 쓴다.
+// 렌더러·테스트가 쓴다.
 import { POKEDEX } from './pokedex.mjs';
 import { POKEMON, MOVES } from './data.mjs';
 import { refreshEntries, aliasTaken } from './parser.mjs';

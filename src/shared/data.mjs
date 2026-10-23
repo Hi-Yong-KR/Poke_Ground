@@ -1,5 +1,5 @@
 // 포켓몬·기술·행동·리액션 정의
-// 포켓몬 목록은 여기 한 곳에서 관리한다 (에셋 다운로드 스크립트·트레이 메뉴가 이 목록을 읽음). dex: 전국도감 번호
+// 포켓몬 목록은 여기 한 곳에서 관리한다 (에셋 다운로드 스크립트·렌더러가 이 목록을 읽음). dex: 전국도감 번호
 
 const mon = (dex, name, type, aliases, cries, moves, extra = {}) =>
   ({ dex, name, type, scale: 3, speed: 65, aliases, cries, moves, signature: moves[0], ...extra });
