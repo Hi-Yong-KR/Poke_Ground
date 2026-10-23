@@ -4,7 +4,7 @@ import { Mon, loadSpecies, CRY_VOLUME } from './pokemon.mjs';
 import { Voice } from './speech.mjs';
 import { parseCommand, resolveTarget, aliasTaken } from '../shared/parser.mjs';
 import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, NOT_LEARNED_TEXT, HIT_TEXT, effectiveness } from '../shared/data.mjs';
-import { learns } from '../shared/moves.mjs';
+import { learns, learnset } from '../shared/moves.mjs';
 import { DEX, TYPE_KO, applyCustom, searchDex, customKey, dexAssets, creationKey, creationTypes, builtinKeyOf } from '../shared/dex.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -339,11 +339,26 @@ function aimOf(m, target) {
   return { x: r.x + r.w / 2, y: r.y + r.h / 2, rect: r };
 }
 
+/**
+ * 기술 이름 없이 "공격"이라고 했을 때 고를 공격 기술 전부 (변화 기술은 뺀다).
+ * 도감 포켓몬은 배우는 기술, 직접 그림을 넣은 포켓몬은 고른 속성의 기술. 포켓몬마다 한 번만 계산해 둔다
+ */
+const ATTACK_POOL = new WeakMap();
+function attackPool(def) {
+  if (!ATTACK_POOL.has(def)) {
+    const learned = def.creation ? null : learnset(def.dex);
+    const types = def.moveTypes || typesOf(def);
+    const keys = learned || Object.keys(MOVES).filter((k) => types.includes(MOVES[k].type));
+    ATTACK_POOL.set(def, [...new Set([...keys, ...def.moves])].filter((k) => MOVES[k] && !MOVES[k].self));
+  }
+  return ATTACK_POOL.get(def);
+}
+
 function attack(m, p, target, box) {
   let moveId = p.move;
   if (!moveId) {
-    const usable = m.def.moves.filter((id) => !MOVES[id].self);
-    moveId = Math.random() < 0.6 || !usable.length ? m.def.signature : pick(usable);
+    const pool = attackPool(m.def);
+    moveId = pool.length ? pick(pool) : m.def.signature;   // 메타몽처럼 공격 기술이 없으면 대표 기술(변신)
   }
   const mv = MOVES[moveId];
   // 도감 포켓몬은 실제로 배우는 기술만, 직접 그림을 넣은 포켓몬은 속성이 맞는 기술과 노말 공격 기술을 쓴다
