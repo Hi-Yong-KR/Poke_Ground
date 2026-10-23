@@ -1,0 +1,13 @@
+Source: PMD SpriteCollab (https://sprites.pmdcollab.org/#/0197)
+License: CC BY-NC 4.0
+
+[Sprite]
+2020-10-07 17:58:43.878955	CHUNSOFT	CUR	Unspecified	Attack,Charge,Double,Hop,Hurt,Idle,Rotate,Shoot,Sleep,Swing,Walk,Withdraw
+2021-02-07 01:19:42.640630	<@!702275233125630042>	OLD	PMDCollab_1	Attack,Charge,Cringe,DeepBreath,Double,Eat,EventSleep,Faint,Float,Head,HitGround,Hop,Hurt,Idle,Laying,LeapForth,LookUp,LostBalance,Nod,Pain,Pose,Pull,Rotate,Shoot,Sink,Sit,Sleep,Swing,Trip,Tumble,TumbleBack,Wake,Walk,Withdraw
+2021-09-22 19:54:46.968229	<@!356635814668664832>	CUR	PMDCollab_1	Attack,Charge,Cringe,DeepBreath,Double,Eat,EventSleep,Faint,Float,Head,HitGround,Hop,Hurt,Idle,Laying,LookUp,LostBalance,Nod,Pose,Pull,Rotate,Shoot,Sink,Sit,Sleep,Swing,Trip,Tumble,TumbleBack,Wake,Walk,Withdraw
+2024-05-24 04:18:55.879248	<@!356635814668664832>	CUR	CC_BY-NC_4	Head
+
+[Portrait]
+2020-10-07 17:58:43.879951	CHUNSOFT	CUR	Unspecified	Normal
+2020-12-12 04:17:08.100343	<@!314519507869761556>	OLD	PMDCollab_1	Angry,Crying,Determined,Dizzy,Happy,Inspired,Joyous,Normal,Pain,Sad,Shouting,Sigh,Stunned,Surprised,Teary-Eyed,Worried
+2022-03-27 03:43:52.341245	<@!356635814668664832>	CUR	PMDCollab_1	Angry,Crying,Determined,Dizzy,Happy,Inspired,Joyous,Normal,Pain,Sad,Shouting,Sigh,Stunned,Surprised,Teary-Eyed,Worried

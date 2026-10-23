@@ -1,0 +1,247 @@
+{
+ "id": "0700",
+ "anims": {
+  "Walk": {
+   "file": "Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "hit": null
+  },
+  "Attack": {
+   "file": "Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 2
+  },
+  "QuickStrike": {
+   "file": "QuickStrike-Anim.png",
+   "w": 120,
+   "h": 136,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 2
+  },
+  "Shoot": {
+   "file": "Shoot-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    1,
+    2,
+    6,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 2
+  },
+  "SpAttack": {
+   "file": "Charge-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 5
+  },
+  "Sleep": {
+   "file": "Sleep-Anim.png",
+   "w": 32,
+   "h": 24,
+   "durations": [
+    30,
+    35
+   ],
+   "hit": null
+  },
+  "Hurt": {
+   "file": "Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ],
+   "hit": null
+  },
+  "Idle": {
+   "file": "Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7
+   ],
+   "hit": null
+  },
+  "Swing": {
+   "file": "Swing-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    1,
+    2,
+    2,
+    3,
+    2,
+    2,
+    1,
+    1
+   ],
+   "hit": 5
+  },
+  "Double": {
+   "file": "Double-Anim.png",
+   "w": 56,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    2,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": null
+  },
+  "Hop": {
+   "file": "Hop-Anim.png",
+   "w": 32,
+   "h": 96,
+   "durations": [
+    2,
+    1,
+    2,
+    3,
+    4,
+    4,
+    3,
+    2,
+    1,
+    2
+   ],
+   "hit": 9
+  },
+  "Charge": {
+   "file": "Charge-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 5
+  },
+  "Rotate": {
+   "file": "Rotate-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 8
+  }
+ },
+ "emotions": [
+  "Normal",
+  "Happy",
+  "Pain",
+  "Angry",
+  "Worried",
+  "Sad",
+  "Crying",
+  "Shouting",
+  "Teary-Eyed",
+  "Determined",
+  "Joyous",
+  "Inspired",
+  "Surprised",
+  "Dizzy",
+  "Sigh",
+  "Stunned"
+ ]
+}

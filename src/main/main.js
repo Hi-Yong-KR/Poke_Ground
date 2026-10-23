@@ -5,10 +5,10 @@ const fs = require('node:fs');
 const http = require('node:http');
 const { spawn, execFile } = require('node:child_process');
 const readline = require('node:readline');
+const { pathToFileURL } = require('node:url');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const POKEMON_KEYS = ['pikachu', 'charizard', 'squirtle', 'bulbasaur', 'eevee'];
-const POKEMON_NAMES = { pikachu: '피카츄', charizard: '리자몽', squirtle: '꼬부기', bulbasaur: '이상해씨', eevee: '이브이' };
+let POKEMON = {};   // src/shared/data.mjs 에서 읽어 옴 (포켓몬 목록은 그곳 한 곳에서 관리)
 const HOTKEY = 'Control+Alt+Space';
 
 let win = null;
@@ -148,14 +148,22 @@ function menuTemplate() {
   return [
     { label: `명령창 열기 (${HOTKEY.replace('Control', 'Ctrl')})`, click: () => { win.focus(); send('toggle-bar', true); } },
     { type: 'separator' },
-    ...POKEMON_KEYS.map((k) => ({
-      label: POKEMON_NAMES[k], type: 'checkbox', checked: config.party.includes(k),
-      click: (item) => {
-        config.party = item.checked ? [...new Set([...config.party, k])] : config.party.filter((x) => x !== k);
-        saveConfig();
-        send('party', config.party);
-      },
-    })),
+    {
+      label: `포켓몬 고르기 (${config.party.length}/${Object.keys(POKEMON).length})`,
+      submenu: Object.entries(POKEMON).flatMap(([k, d], i) => [
+        // 처음 5마리 / 이브이 진화형 / 그 밖의 친구들 사이에 구분선
+        ...(i === 5 || i === 13 ? [{ type: 'separator' }] : []),
+        {
+          label: d.name, type: 'checkbox', checked: config.party.includes(k),
+          click: (item) => {
+            config.party = item.checked ? [...new Set([...config.party, k])] : config.party.filter((x) => x !== k);
+            saveConfig();
+            buildTrayMenu();
+            send('party', config.party);
+          },
+        },
+      ]),
+    },
     { type: 'separator' },
     { label: '음성인식', type: 'checkbox', checked: config.voice, click: (item) => { config.voice = item.checked; saveConfig(); send('voice', config.voice); } },
     { label: '울음소리', type: 'checkbox', checked: config.sound, click: (item) => { config.sound = item.checked; saveConfig(); send('sound', config.sound); } },
@@ -201,7 +209,8 @@ async function createWindow() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    ({ POKEMON } = await import(pathToFileURL(path.join(ROOT, 'src', 'shared', 'data.mjs')).href));
     loadConfig();
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');

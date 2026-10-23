@@ -3,7 +3,7 @@ import { FX } from './fx.mjs';
 import { Mon, loadSpecies } from './pokemon.mjs';
 import { Voice } from './speech.mjs';
 import { parseCommand, resolveTarget } from '../shared/parser.mjs';
-import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, HIT_TEXT } from '../shared/data.mjs';
+import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, HIT_TEXT, SUPER, WEAK } from '../shared/data.mjs';
 
 const $ = (s) => document.querySelector(s);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -250,8 +250,6 @@ const PROCESS_LABEL = {
   explorer: '파일 탐색기', chrome: '크롬', msedge: '엣지', claude: 'Claude', code: 'VS Code', notepad: '메모장',
   kakaotalk: '카카오톡', hwp: '한글', winword: '워드', excel: '엑셀', powerpnt: '파워포인트', windowsterminal: '터미널',
 };
-const SUPER = { electric: ['water', 'flying'], fire: ['grass', 'steel'], water: ['fire'], grass: ['water'] };
-const WEAK = { electric: ['grass', 'electric'], fire: ['water', 'fire'], water: ['grass', 'water'], grass: ['fire', 'grass'] };
 
 function clipRect(r) {
   const x = Math.max(0, r.x), y = Math.max(0, r.y);
@@ -326,7 +324,8 @@ function attack(m, p, target, box) {
 
   if (mv.self) {
     return m.run(async () => {
-      m.say({ emotion: 'Joyous', text: `${mv.name}! ${moveId === 'withdraw' ? '등껍질 속에 쏙 숨었다. 무서운 건 아닌 것 같다' : '꼬리를 귀엽게 흔들어 상대의 방어를 낮추려 한다'}` });
+      m.say({ emotion: 'Joyous', text: `${mv.name}! ${mv.selfText}` });
+      app.fx.emote('sparkles', m.center.x, m.center.y - 30, m.def.type);
       await m.playOnce(mv.anims, { times: 2 });
     });
   }

@@ -1,6 +1,52 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCommand, resolveTarget, acceptVoice } from '../src/shared/parser.mjs';
+import { POKEMON, MOVES, ACTIONS, ATTACK_WORDS } from '../src/shared/data.mjs';
+
+test('데이터: 별칭이 서로 겹치지 않고, 포켓몬 기술은 모두 정의돼 있음', () => {
+  const seen = new Map();
+  const add = (alias, owner) => {
+    const prev = seen.get(alias);
+    assert.ok(!prev || prev === owner, `별칭 '${alias}'이(가) ${prev}와 ${owner}에 중복`);
+    seen.set(alias, owner);
+  };
+  for (const [k, p] of Object.entries(POKEMON)) p.aliases.forEach((a) => add(a, 'pokemon:' + k));
+  for (const [k, m] of Object.entries(MOVES)) m.aliases.forEach((a) => add(a, 'move:' + k));
+  for (const [k, list] of Object.entries(ACTIONS)) list.forEach((a) => add(a, 'action:' + k));
+  ATTACK_WORDS.forEach((a) => add(a, 'attack'));
+  for (const [k, p] of Object.entries(POKEMON)) {
+    for (const mv of p.moves) assert.ok(MOVES[mv], `${k}의 기술 ${mv}가 없음`);
+    assert.ok(Number.isInteger(p.dex), `${k} 도감 번호 없음`);
+  }
+  assert.equal(Object.keys(POKEMON).length, 27);
+});
+
+test('새 포켓몬 명령', () => {
+  let p = parseCommand('쥬피썬더 크롬 10만볼트');
+  assert.deepEqual(p.pokemon, ['jolteon']);
+  assert.equal(p.move, 'thunderbolt');
+  p = parseCommand('글레이시아 휴지통 냉동빔');
+  assert.deepEqual(p.pokemon, ['glaceon']);
+  assert.equal(p.move, 'icebeam');
+  assert.deepEqual(parseCommand('에브이 사이코키네시스').pokemon, ['espeon']);
+  assert.deepEqual(parseCommand('이브이 스피드스타').pokemon, ['eevee']);
+  p = parseCommand('님피아 피카츄 문포스');
+  assert.deepEqual(p.pokemon, ['sylveon']);
+  assert.equal(p.targetPokemon, 'pikachu');
+  assert.equal(parseCommand('염버니 화염볼').move, 'pyroball');
+  assert.equal(parseCommand('블래키 물기').move, 'bite');
+  assert.deepEqual(parseCommand('주리비안 리프블레이드').pokemon, ['snivy']);
+  assert.equal(parseCommand('마휘핑 나와').action, 'out');
+  assert.equal(parseCommand('조로아 크롬 공격').attack, true);
+});
+
+test('띄어쓴 단어가 옆 단어에 먹히지 않음', () => {
+  const p = parseCommand('모두 들어가');
+  assert.equal(p.all, true);
+  assert.equal(p.action, 'ball');
+  assert.equal(parseCommand('모두들 들어가').action, 'ball');
+  assert.equal(parseCommand('피카츄 크롬 십만 볼트').move, 'thunderbolt');
+});
 
 const w = (s) => s.split(' ').map((x) => { const [word, conf] = x.split(':'); return { word, conf: +conf }; });
 

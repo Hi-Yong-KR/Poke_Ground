@@ -1,41 +1,91 @@
 // 포켓몬·기술·행동·리액션 정의
+// 포켓몬 목록은 여기 한 곳에서 관리한다 (에셋 다운로드 스크립트·트레이 메뉴가 이 목록을 읽음). dex: 전국도감 번호
+
+const mon = (dex, name, type, aliases, cries, moves, extra = {}) =>
+  ({ dex, name, type, scale: 3, speed: 65, aliases, cries, moves, signature: moves[0], ...extra });
 
 export const POKEMON = {
   pikachu: {
-    name: '피카츄', type: 'electric', scale: 3, speed: 75,
+    dex: 25, name: '피카츄', type: 'electric', scale: 3, speed: 75,
     aliases: ['피카츄', '피카추', '피카쮸', '삐카츄', '피카', 'pikachu'],
     cries: ['피카!', '피카피카!', '피카츄~!', '피-카-츄우!', '피카?', '피카아~'],
     moves: ['thunderbolt', 'thundershock', 'thunder', 'quickattack', 'irontail', 'tackle'],
     signature: 'thunderbolt',
   },
   charizard: {
-    name: '리자몽', type: 'fire', scale: 2.6, speed: 65,
+    dex: 6, name: '리자몽', type: 'fire', scale: 2.6, speed: 65,
     aliases: ['리자몽', '리자', 'charizard'],
     cries: ['그오오!', '리자아!', '갸오오~', '리자몽!', '크르릉...'],
     moves: ['flamethrower', 'fireblast', 'ember', 'wingattack', 'dragonclaw', 'tackle'],
     signature: 'flamethrower',
   },
   squirtle: {
-    name: '꼬부기', type: 'water', scale: 3, speed: 60,
+    dex: 7, name: '꼬부기', type: 'water', scale: 3, speed: 60,
     aliases: ['꼬부기', '꼬북이', '꼬북', '꼬부', 'squirtle'],
     cries: ['꼬북!', '꼬북꼬북!', '꼬부기~!', '꼬부욱?'],
     moves: ['watergun', 'hydropump', 'bubble', 'withdraw', 'tackle'],
     signature: 'watergun',
   },
   bulbasaur: {
-    name: '이상해씨', type: 'grass', scale: 3, speed: 55,
+    dex: 1, name: '이상해씨', type: 'grass', scale: 3, speed: 55,
     aliases: ['이상해씨', '이상해시', '이상해', 'bulbasaur'],
     cries: ['이상해~씨!', '씨-이!', '이상해!', '해씨~'],
     moves: ['vinewhip', 'razorleaf', 'solarbeam', 'tackle'],
     signature: 'vinewhip',
   },
   eevee: {
-    name: '이브이', type: 'normal', scale: 3, speed: 70,
+    dex: 133, name: '이브이', type: 'normal', scale: 3, speed: 70,
     aliases: ['이브이', '이부이', 'eevee'],
     cries: ['브이!', '브이브이!', '이브이~!', '브이?'],
     moves: ['swift', 'quickattack', 'tackle', 'tailwhip'],
     signature: 'swift',
   },
+  // ---- 이브이 진화형 ----
+  jolteon: mon(135, '쥬피썬더', 'electric', ['쥬피썬더', '쥬피선더', '쥬피'], ['썬더!', '쥬피~!', '쥬피썬더!', '찌릿?'],
+    ['thunderbolt', 'discharge', 'thundershock', 'quickattack', 'tackle'], { speed: 90 }),
+  sylveon: mon(700, '님피아', 'fairy', ['님피아', '님피'], ['님피~♪', '님피아!', '피아~', '님피?'],
+    ['moonblast', 'dazzlinggleam', 'fairywind', 'drainkiss', 'quickattack']),
+  flareon: mon(136, '부스터', 'fire', ['부스터', '부스'], ['부스~!', '부스터!', '부스부스!', '후우...'],
+    ['flamethrower', 'flamecharge', 'ember', 'fireblast', 'tackle']),
+  glaceon: mon(471, '글레이시아', 'ice', ['글레이시아', '글레이시', '글레이'], ['글레이~', '시아!', '글레이시아~!', '시아?'],
+    ['icebeam', 'blizzard', 'iceshard', 'icywind', 'quickattack']),
+  leafeon: mon(470, '리피아', 'grass', ['리피아', '리피'], ['리피~', '리피아!', '피아~♪', '리피?'],
+    ['leafblade', 'razorleaf', 'energyball', 'magicalleaf', 'quickattack']),
+  umbreon: mon(197, '블래키', 'dark', ['블래키', '블랙키', '블래'], ['블래...', '블래키!', '키이...', '블래?'],
+    ['darkpulse', 'bite', 'feintattack', 'moonlight', 'quickattack'], { speed: 60 }),
+  espeon: mon(196, '에브이', 'psychic', ['에브이', '에브'], ['에브~', '에브이!', '브이~♪', '에브?'],
+    ['psychic', 'psybeam', 'confusion', 'swift', 'quickattack']),
+  vaporeon: mon(134, '샤미드', 'water', ['샤미드', '샤미'], ['샤미~', '샤미드!', '샤아~', '샤미?'],
+    ['hydropump', 'scald', 'watergun', 'bubble', 'quickattack'], { speed: 60 }),
+  // ---- 그 밖의 귀여운 친구들 ----
+  riolu: mon(447, '리오르', 'fighting', ['리오르', '리올루', '리오'], ['리오!', '리오르!', '리오오~', '리오?'],
+    ['aurasphere', 'forcepalm', 'vacuumwave', 'quickattack'], { speed: 80 }),
+  zorua: mon(570, '조로아', 'dark', ['조로아', '조로'], ['조로?', '조로아~!', '조로조로!', '아~'],
+    ['nightdaze', 'feintattack', 'scratch', 'bite'], { speed: 75 }),
+  pachirisu: mon(417, '파치리스', 'electric', ['파치리스', '파치리', '파치'], ['파치파치!', '파치리~스!', '파치?', '리스~'],
+    ['nuzzle', 'discharge', 'thundershock', 'quickattack'], { scale: 2.6, speed: 85 }),
+  minccino: mon(572, '치라미', 'normal', ['치라미', '치라'], ['치라!', '치라미~', '치라치라!', '미~?'],
+    ['tailslap', 'hypervoice', 'swift', 'tackle']),
+  buneary: mon(427, '이어롤', 'normal', ['이어롤', '이어'], ['이어~', '이어롤!', '롤롤!', '이어?'],
+    ['bounce', 'dizzypunch', 'quickattack', 'charm'], { scale: 2.7, speed: 75 }),
+  corsola: mon(222, '코산호', 'water', ['코산호', '코산'], ['코산!', '코산호~', '산호?', '코오~'],
+    ['powergem', 'spikecannon', 'bubble', 'watergun'], { speed: 45 }),
+  emolga: mon(587, '에몽가', 'electric', ['에몽가', '에몽'], ['에몽!', '에몽가~!', '몽몽!', '에몽?'],
+    ['acrobatics', 'nuzzle', 'discharge', 'thundershock'], { speed: 85 }),
+  espurr: mon(677, '냐스퍼', 'psychic', ['냐스퍼', '냐스'], ['냐...', '냐스퍼.', '냐아?', '...냐'],
+    ['psychic', 'confusion', 'disarmingvoice', 'fakeout'], { speed: 55 }),
+  piplup: mon(393, '팽도리', 'water', ['팽도리', '팽도', '펭도리'], ['팽!', '팽도리!', '팽팽~', '도리?'],
+    ['bubble', 'watergun', 'drillpeck', 'peck'], { speed: 55 }),
+  snivy: mon(495, '주리비얀', 'grass', ['주리비얀', '주리비안', '주리비'], ['주리...', '주리비얀!', '비얀~', '흥.'],
+    ['leafblade', 'leafstorm', 'vinewhip', 'magicalleaf'], { speed: 70 }),
+  fennekin: mon(653, '푸호꼬', 'fire', ['푸호꼬', '푸호코', '푸호'], ['푸호!', '푸호꼬~', '꼬꼬!', '푸호?'],
+    ['mysticalfire', 'flamethrower', 'ember', 'psybeam']),
+  scorbunny: mon(813, '염버니', 'fire', ['염버니', '염버'], ['염버!', '염버니!', '버니버니!', '염버?'],
+    ['pyroball', 'flamecharge', 'doublekick', 'ember'], { speed: 90 }),
+  cyndaquil: mon(155, '브케인', 'fire', ['브케인', '브케'], ['브케!', '브케인~', '케인!', '브케?'],
+    ['eruption', 'flamewheel', 'flamethrower', 'ember'], { speed: 60 }),
+  alcremie: mon(869, '마휘핑', 'fairy', ['마휘핑', '마휘'], ['마휘~♪', '휘핑!', '마휘핑~', '휘?'],
+    ['dazzlinggleam', 'drainkiss', 'decorate', 'fairywind'], { speed: 50 }),
 };
 
 export const ALL_ALIASES = ['모두', '다들', '전부', '얘들아', '모두들', '다같이', '다'];
@@ -56,12 +106,71 @@ export const MOVES = {
   watergun: { name: '물대포', type: 'water', fx: 'water', anims: ['Shoot', 'Attack'], aliases: ['물대포', '물총', '워터건', '물'] },
   hydropump: { name: '하이드로펌프', type: 'water', fx: 'hydropump', anims: ['Shoot', 'Charge', 'Attack'], aliases: ['하이드로펌프', '하이드로', '펌프'] },
   bubble: { name: '거품', type: 'water', fx: 'bubble', anims: ['Shoot', 'Attack'], aliases: ['거품광선', '거품', '버블', '비눗방울', '방울'] },
-  withdraw: { name: '껍질에숨기', type: 'water', self: true, anims: ['Withdraw', 'Sit'], aliases: ['껍질에숨기', '껍질', '등껍질'] },
+  withdraw: { name: '껍질에숨기', type: 'water', self: true, selfText: '등껍질 속에 쏙 숨었다. 무서운 건 아닌 것 같다', anims: ['Withdraw', 'Sit'], aliases: ['껍질에숨기', '껍질', '등껍질'] },
   vinewhip: { name: '덩굴채찍', type: 'grass', fx: 'vine', anims: ['Shoot', 'Attack', 'Strike'], aliases: ['덩굴채찍', '덩굴', '채찍'] },
   razorleaf: { name: '잎날가르기', type: 'grass', fx: 'leaf', anims: ['Shoot', 'Attack'], aliases: ['잎날가르기', '잎날', '나뭇잎', '잎사귀'] },
   solarbeam: { name: '솔라빔', type: 'grass', fx: 'solarbeam', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['솔라빔', '쏠라빔', '태양광선', '솔라'] },
   swift: { name: '스피드스타', type: 'normal', fx: 'stars', anims: ['Shoot', 'Attack'], aliases: ['스피드스타', '스타', '별'] },
-  tailwhip: { name: '꼬리흔들기', type: 'normal', self: true, anims: ['TailWhip', 'Double', 'Swing'], aliases: ['꼬리흔들기', '꼬리'] },
+  tailwhip: { name: '꼬리흔들기', type: 'normal', self: true, selfText: '꼬리를 귀엽게 흔들어 상대의 방어를 낮추려 한다', anims: ['TailWhip', 'Double', 'Swing'], aliases: ['꼬리흔들기', '꼬리'] },
+
+  // ---- 전기 ----
+  discharge: { name: '방전', type: 'electric', fx: 'thunder', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['방전'] },
+  nuzzle: { name: '볼부비부비', type: 'electric', fx: 'spark', melee: true, anims: ['Attack', 'Strike', 'Head'], aliases: ['볼부비부비', '볼부비'] },
+  // ---- 불꽃 ----
+  flamecharge: { name: '니트로차지', type: 'fire', fx: 'dash', melee: true, anims: ['Attack', 'Strike', 'Head'], aliases: ['니트로차지', '니트로'] },
+  flamewheel: { name: '화염자동차', type: 'fire', fx: 'dash', melee: true, anims: ['Rotate', 'Attack', 'Strike'], aliases: ['화염자동차', '불바퀴'] },
+  mysticalfire: { name: '매지컬플레임', type: 'fire', fx: 'orb', anims: ['Shoot', 'Charge', 'Attack'], aliases: ['매지컬플레임', '매지컬불꽃'] },
+  pyroball: { name: '화염볼', type: 'fire', fx: 'fireblast', anims: ['Kick', 'Shoot', 'Attack', 'Strike'], aliases: ['화염볼', '파이어볼', '불공'] },
+  eruption: { name: '분화', type: 'fire', fx: 'eruption', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['분화', '폭발'] },
+  // ---- 물 ----
+  scald: { name: '열탕', type: 'water', fx: 'stream', anims: ['Shoot', 'Attack'], aliases: ['열탕', '뜨거운물'] },
+  // ---- 풀 ----
+  leafblade: { name: '리프블레이드', type: 'grass', fx: 'slash', melee: true, anims: ['Strike', 'Swing', 'Attack'], aliases: ['리프블레이드', '잎칼'] },
+  leafstorm: { name: '리프스톰', type: 'grass', fx: 'blizzard', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['리프스톰', '나뭇잎폭풍'] },
+  magicalleaf: { name: '매지컬리프', type: 'grass', fx: 'leaf', anims: ['Shoot', 'Attack'], aliases: ['매지컬리프'] },
+  energyball: { name: '에너지볼', type: 'grass', fx: 'orb', anims: ['Shoot', 'Charge', 'Attack'], aliases: ['에너지볼'] },
+  // ---- 얼음 ----
+  icebeam: { name: '냉동빔', type: 'ice', fx: 'beam', anims: ['Shoot', 'Charge', 'Attack'], aliases: ['냉동빔', '얼음빔', '아이스빔'] },
+  blizzard: { name: '눈보라', type: 'ice', fx: 'blizzard', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['눈보라', '블리자드'] },
+  iceshard: { name: '얼음뭉치', type: 'ice', fx: 'shards', anims: ['Shoot', 'Attack'], aliases: ['얼음뭉치', '얼음'] },
+  icywind: { name: '얼다바람', type: 'ice', fx: 'sparkle', anims: ['Shoot', 'Attack'], aliases: ['얼다바람', '찬바람'] },
+  // ---- 페어리 ----
+  moonblast: { name: '문포스', type: 'fairy', fx: 'orb', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['문포스', '달의힘'] },
+  dazzlinggleam: { name: '매지컬샤인', type: 'fairy', fx: 'beam', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['매지컬샤인', '샤인'] },
+  fairywind: { name: '요정의바람', type: 'fairy', fx: 'sparkle', anims: ['Shoot', 'Attack'], aliases: ['요정의바람', '요정바람'] },
+  drainkiss: { name: '드레인키스', type: 'fairy', fx: 'kiss', anims: ['Shoot', 'Attack', 'Hop'], aliases: ['드레인키스', '뽀뽀', '키스'] },
+  disarmingvoice: { name: '차밍보이스', type: 'fairy', fx: 'ringwave', anims: ['Shoot', 'Attack'], aliases: ['차밍보이스'] },
+  charm: { name: '애교부리기', type: 'fairy', self: true, selfText: '한껏 애교를 부린다. 귀여움으로 상대의 공격을 낮추려는 작전 같다', anims: ['Pose', 'Hop', 'Double'], aliases: ['애교부리기', '애교'] },
+  decorate: { name: '데코레이션', type: 'fairy', self: true, selfText: '크림과 사탕으로 몸을 예쁘게 꾸민다. 칭찬받고 싶은 것 같다', anims: ['Pose', 'Rotate', 'Double'], aliases: ['데코레이션', '꾸미기'] },
+  // ---- 악 ----
+  darkpulse: { name: '악의파동', type: 'dark', fx: 'ringwave', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['악의파동'] },
+  nightdaze: { name: '나이트버스트', type: 'dark', fx: 'ringwave', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['나이트버스트'] },
+  bite: { name: '물기', type: 'dark', fx: 'bite', melee: true, anims: ['Attack', 'Strike', 'Head'], aliases: ['물기', '깨물어', '깨물기'] },
+  feintattack: { name: '속여때리기', type: 'dark', fx: 'dash', melee: true, anims: ['Attack', 'Strike'], aliases: ['속여때리기'] },
+  moonlight: { name: '달의불빛', type: 'fairy', self: true, selfText: '달빛을 받아 고리 무늬가 은은하게 빛난다. 기운을 회복하는 중', anims: ['Charge', 'Pose', 'Idle'], aliases: ['달의불빛', '달빛'] },
+  // ---- 에스퍼 ----
+  psychic: { name: '사이코키네시스', type: 'psychic', fx: 'psywave', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['사이코키네시스', '사이코', '염력'] },
+  confusion: { name: '염동력', type: 'psychic', fx: 'psywave', anims: ['Shoot', 'Charge', 'Attack'], aliases: ['염동력'] },
+  psybeam: { name: '환상빔', type: 'psychic', fx: 'beam', anims: ['Shoot', 'Attack'], aliases: ['환상빔', '사이코빔'] },
+  // ---- 격투 ----
+  aurasphere: { name: '파동탄', type: 'fighting', fx: 'orb', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['파동탄', '파동'] },
+  forcepalm: { name: '발경', type: 'fighting', fx: 'slam', melee: true, anims: ['Strike', 'Attack'], aliases: ['발경', '장풍'] },
+  vacuumwave: { name: '진공파', type: 'fighting', fx: 'shards', anims: ['Shoot', 'Attack'], aliases: ['진공파'] },
+  doublekick: { name: '두번치기', type: 'fighting', fx: 'slam', melee: true, anims: ['Kick', 'Strike', 'Attack'], aliases: ['두번치기', '발차기'] },
+  dizzypunch: { name: '잼잼펀치', type: 'normal', fx: 'slam', melee: true, anims: ['Strike', 'Attack'], aliases: ['잼잼펀치', '펀치'] },
+  // ---- 노말 ----
+  scratch: { name: '할퀴기', type: 'normal', fx: 'slash', melee: true, anims: ['Strike', 'Attack'], aliases: ['할퀴기', '할퀴어'] },
+  tailslap: { name: '스위프뺨치기', type: 'normal', fx: 'slam', melee: true, anims: ['Swing', 'Strike', 'Attack'], aliases: ['스위프뺨치기', '뺨치기'] },
+  hypervoice: { name: '하이퍼보이스', type: 'normal', fx: 'ringwave', anims: ['Shoot', 'Attack'], aliases: ['하이퍼보이스'] },
+  bounce: { name: '뛰어오르다', type: 'flying', fx: 'slam', melee: true, anims: ['Hop', 'LeapForth', 'Attack'], aliases: ['뛰어오르다', '바운스'] },
+  fakeout: { name: '속이다', type: 'normal', fx: 'dash', melee: true, anims: ['Attack', 'Strike'], aliases: ['속이다', '깜짝공격'] },
+  // ---- 비행 ----
+  acrobatics: { name: '애크러뱃', type: 'flying', fx: 'dash', melee: true, anims: ['Rotate', 'Attack', 'Strike'], aliases: ['애크러뱃', '아크로바틱'] },
+  drillpeck: { name: '회오리부리', type: 'flying', fx: 'slam', melee: true, anims: ['Attack', 'Strike', 'Rotate'], aliases: ['회오리부리'] },
+  peck: { name: '쪼기', type: 'flying', fx: 'dash', melee: true, anims: ['Attack', 'Strike'], aliases: ['쪼기', '쪼아'] },
+  // ---- 바위 ----
+  powergem: { name: '파워젬', type: 'rock', fx: 'shards', anims: ['Shoot', 'Charge', 'Attack'], aliases: ['파워젬', '보석'] },
+  spikecannon: { name: '가시캐논', type: 'rock', fx: 'shards', anims: ['Shoot', 'Attack'], aliases: ['가시캐논', '가시'] },
 };
 
 export const ATTACK_WORDS = ['공격', '어택', '때려', '혼내', '기술', '필살기', '부숴', '파괴'];
@@ -183,6 +292,24 @@ export const CANT_TEXT = {
   dragon: '그런 멋진 기술은 아직 못 배웠다는 것 같다',
   steel: '그 기술은 못 쓴다며 꼬리만 흔든다',
   normal: '그 기술은 모른다며 갸웃거린다',
+  ice: '얼음은 못 만든다며 몸을 부르르 떤다',
+  fairy: '그렇게 반짝이는 기술은 모른다며 수줍어한다',
+  dark: '그런 음흉한 기술은 못 쓴다며 고개를 젓는다',
+  psychic: '아무리 집중해도 초능력이 안 나와서 머쓱해한다',
+  fighting: '주먹을 휘둘러 보지만 기술이 안 나와 민망해한다',
+  rock: '돌덩이는 못 던진다며 눈만 깜빡인다',
+};
+
+// 타입 상성 (대상이 포켓몬일 때 "효과는 굉장했다!" 판정용)
+export const SUPER = {
+  electric: ['water', 'flying'], fire: ['grass', 'ice', 'steel'], water: ['fire', 'rock'], grass: ['water', 'rock'],
+  ice: ['grass', 'flying', 'dragon'], fighting: ['normal', 'ice', 'dark', 'rock'], psychic: ['fighting'],
+  dark: ['psychic'], fairy: ['fighting', 'dark', 'dragon'], flying: ['grass', 'fighting'], rock: ['fire', 'ice', 'flying'],
+};
+export const WEAK = {
+  electric: ['grass', 'electric'], fire: ['water', 'fire', 'rock'], water: ['grass', 'water'], grass: ['fire', 'grass', 'flying'],
+  ice: ['fire', 'water', 'ice'], fighting: ['psychic', 'fairy', 'flying'], psychic: ['psychic'],
+  dark: ['fighting', 'dark', 'fairy'], fairy: ['fire'], flying: ['electric', 'rock'], rock: ['fighting'],
 };
 
 export const HIT_TEXT = ['효과는 굉장했다!', '급소에 맞았다!', '효과가 굉장했다!', '효과는 별로인 듯하다...', '명중!'];

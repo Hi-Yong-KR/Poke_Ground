@@ -3,18 +3,14 @@
 import { mkdir, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { POKEMON as DEFS } from '../src/shared/data.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master';
 const CRIES = 'https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest';
 
-export const POKEMON = {
-  pikachu: '0025',
-  charizard: '0006',
-  squirtle: '0007',
-  bulbasaur: '0001',
-  eevee: '0133',
-};
+// 포켓몬 목록은 src/shared/data.mjs 한 곳에서 관리 (key → 4자리 도감 번호)
+const POKEMON = Object.fromEntries(Object.entries(DEFS).map(([k, d]) => [k, String(d.dex).padStart(4, '0')]));
 
 const EMOTIONS = [
   'Normal', 'Happy', 'Pain', 'Angry', 'Worried', 'Sad', 'Crying', 'Shouting',
@@ -98,7 +94,9 @@ async function fetchPokemon(key, id) {
   console.log(`${key}: ${Object.keys(anims).length} anims, ${emotions.length} emotions`);
 }
 
-for (const [key, id] of Object.entries(POKEMON)) {
-  await fetchPokemon(key, id);
+// 이미 받은 포켓몬은 건너뛰고, 4마리씩 동시에 받는다
+const todo = Object.entries(POKEMON);
+while (todo.length) {
+  await Promise.all(todo.splice(0, 4).map(([key, id]) => fetchPokemon(key, id)));
 }
 console.log('done');

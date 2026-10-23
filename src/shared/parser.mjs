@@ -48,6 +48,13 @@ export function parseCommand(text) {
     matches.push({ ...entry, start, end, fuzzy });
   };
 
+  // 1단계: 띄어쓴 단어가 별칭과 통째로 같으면 먼저 인정 ("모두 들어가"가 "모두들|어가"로 잘리지 않게)
+  tokens.forEach((t, i) => {
+    const e = ENTRY_OF.get(t) || ENTRY_OF.get(stripParticle(t));
+    if (e && e.alias.length > 1) mark(e, tokenStarts[i], tokenStarts[i] + e.alias.length);
+  });
+
+  // 2단계: 붙여 쓴 말 속에서 긴 별칭부터 찾기
   for (const entry of ENTRIES) {
     const a = entry.alias;
     if (a.length === 1) {

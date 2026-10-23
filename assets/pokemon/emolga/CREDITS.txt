@@ -1,0 +1,11 @@
+Source: PMD SpriteCollab (https://sprites.pmdcollab.org/#/0587)
+License: CC BY-NC 4.0
+
+[Sprite]
+2021-04-14 01:13:27.850517	<@!702275233125630042>	OLD	PMDCollab_1	Attack,Charge,Double,Hop,Hover,Hurt,Idle,QuickStrike,Rotate,Shock,Shoot,Sleep,Swing,Walk
+2021-11-28 11:23:50.358721	<@!544245909639397378>	CUR	PMDCollab_1	Attack,Charge,Cringe,DeepBreath,Double,Eat,EventSleep,Faint,Float,Head,HitGround,Hop,Hurt,Idle,Laying,LeapForth,LookUp,LostBalance,Nod,Pain,Pose,Pull,QuickStrike,Rotate,Shock,Shoot,Sink,Sit,Sleep,Swing,Trip,Tumble,TumbleBack,Wake,Walk
+
+[Portrait]
+2020-11-05 21:16:00.152435	MUCRUSH	OLD	PMDCollab_1	Normal
+2021-04-01 16:57:35.861731	<@!598484619897077761>	OLD	PMDCollab_1	Angry,Crying,Determined,Dizzy,Happy,Inspired,Joyous,Normal,Pain,Sad,Shouting,Sigh,Special0,Stunned,Surprised,Teary-Eyed,Worried
+2022-08-02 17:55:16.489882	<@!356635814668664832>	CUR	PMDCollab_1	Normal,Sad,Joyous,Happy,Crying,Inspired,Sigh,Pain,Shouting,Surprised,Stunned,Angry,Teary-Eyed,Dizzy,Worried,Determined,Special0

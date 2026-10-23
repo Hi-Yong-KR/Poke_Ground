@@ -1,0 +1,538 @@
+{
+ "id": "0417",
+ "anims": {
+  "Walk": {
+   "file": "Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    6,
+    4,
+    6,
+    4,
+    6,
+    4,
+    6,
+    4
+   ],
+   "hit": null
+  },
+  "Attack": {
+   "file": "Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    1,
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 2
+  },
+  "QuickStrike": {
+   "file": "QuickStrike-Anim.png",
+   "w": 112,
+   "h": 120,
+   "durations": [
+    1,
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 2
+  },
+  "Shoot": {
+   "file": "Shoot-Anim.png",
+   "w": 56,
+   "h": 48,
+   "durations": [
+    1,
+    2,
+    6,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 2
+  },
+  "Appeal": {
+   "file": "Appeal-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10,
+    8,
+    10
+   ],
+   "hit": 0
+  },
+  "Sleep": {
+   "file": "Sleep-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    35
+   ],
+   "hit": null
+  },
+  "Hurt": {
+   "file": "Hurt-Anim.png",
+   "w": 56,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ],
+   "hit": null
+  },
+  "Idle": {
+   "file": "Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    30,
+    1,
+    3,
+    5,
+    6,
+    6,
+    5,
+    3,
+    1
+   ],
+   "hit": null
+  },
+  "Swing": {
+   "file": "Swing-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    1,
+    2,
+    2,
+    3,
+    2,
+    2,
+    1,
+    1
+   ],
+   "hit": 5
+  },
+  "Double": {
+   "file": "Double-Anim.png",
+   "w": 56,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    2,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": null
+  },
+  "Hop": {
+   "file": "Hop-Anim.png",
+   "w": 48,
+   "h": 96,
+   "durations": [
+    2,
+    1,
+    2,
+    3,
+    4,
+    4,
+    3,
+    2,
+    1,
+    2
+   ],
+   "hit": 9
+  },
+  "Charge": {
+   "file": "Charge-Anim.png",
+   "w": 48,
+   "h": 32,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 5
+  },
+  "Rotate": {
+   "file": "Rotate-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": 8
+  },
+  "EventSleep": {
+   "file": "EventSleep-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    30,
+    35
+   ],
+   "hit": null
+  },
+  "Wake": {
+   "file": "Wake-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    8,
+    6,
+    4,
+    14,
+    10
+   ],
+   "hit": null
+  },
+  "Eat": {
+   "file": "Eat-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ],
+   "hit": null
+  },
+  "Tumble": {
+   "file": "Tumble-Anim.png",
+   "w": 24,
+   "h": 56,
+   "durations": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "hit": null
+  },
+  "Pose": {
+   "file": "Pose-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    8,
+    1,
+    3,
+    2,
+    8
+   ],
+   "hit": null
+  },
+  "Pull": {
+   "file": "Pull-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    12,
+    10,
+    12,
+    10,
+    12,
+    10
+   ],
+   "hit": null
+  },
+  "Pain": {
+   "file": "Pain-Anim.png",
+   "w": 48,
+   "h": 40,
+   "durations": [
+    4,
+    1,
+    1,
+    1,
+    2,
+    1,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "hit": null
+  },
+  "Float": {
+   "file": "Float-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    9,
+    18,
+    9,
+    14
+   ],
+   "hit": null
+  },
+  "DeepBreath": {
+   "file": "DeepBreath-Anim.png",
+   "w": 24,
+   "h": 48,
+   "durations": [
+    12,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    10,
+    4
+   ],
+   "hit": null
+  },
+  "Nod": {
+   "file": "Nod-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    6,
+    8,
+    6
+   ],
+   "hit": null
+  },
+  "Sit": {
+   "file": "Sit-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    8,
+    8
+   ],
+   "hit": null
+  },
+  "LookUp": {
+   "file": "LookUp-Anim.png",
+   "w": 24,
+   "h": 24,
+   "durations": [
+    6,
+    6,
+    6
+   ],
+   "hit": null
+  },
+  "Sink": {
+   "file": "Sink-Anim.png",
+   "w": 32,
+   "h": 24,
+   "durations": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ],
+   "hit": null
+  },
+  "Trip": {
+   "file": "Trip-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    4,
+    6,
+    4,
+    4,
+    4
+   ],
+   "hit": null
+  },
+  "Laying": {
+   "file": "Laying-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    30
+   ],
+   "hit": null
+  },
+  "LeapForth": {
+   "file": "LeapForth-Anim.png",
+   "w": 24,
+   "h": 72,
+   "durations": [
+    6,
+    1,
+    1,
+    2,
+    2,
+    2
+   ],
+   "hit": null
+  },
+  "Head": {
+   "file": "Head-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    4
+   ],
+   "hit": null
+  },
+  "Cringe": {
+   "file": "Cringe-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ],
+   "hit": null
+  },
+  "LostBalance": {
+   "file": "LostBalance-Anim.png",
+   "w": 32,
+   "h": 24,
+   "durations": [
+    8,
+    8
+   ],
+   "hit": null
+  },
+  "TumbleBack": {
+   "file": "TumbleBack-Anim.png",
+   "w": 24,
+   "h": 48,
+   "durations": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "hit": null
+  },
+  "Faint": {
+   "file": "Faint-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    4,
+    10
+   ],
+   "hit": null
+  },
+  "HitGround": {
+   "file": "HitGround-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4,
+    4
+   ],
+   "hit": null
+  }
+ },
+ "emotions": [
+  "Normal",
+  "Happy",
+  "Pain",
+  "Angry",
+  "Worried",
+  "Sad",
+  "Crying",
+  "Shouting",
+  "Teary-Eyed",
+  "Determined",
+  "Joyous",
+  "Inspired",
+  "Surprised",
+  "Dizzy",
+  "Sigh",
+  "Stunned"
+ ]
+}

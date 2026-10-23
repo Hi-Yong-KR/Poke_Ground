@@ -4,7 +4,10 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const lerp = (a, b, t) => a + (b - a) * t;
 
 const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-const TYPE_EMOJI = { electric: '⚡', fire: '🔥', water: '💧', grass: '🍃', normal: '⭐' };
+const TYPE_EMOJI = {
+  electric: '⚡', fire: '🔥', water: '💧', grass: '🍃', normal: '⭐',
+  ice: '❄️', fairy: '✨', dark: '🌙', psychic: '🔮', fighting: '👊',
+};
 const TYPE_COLORS = {
   electric: ['#fff7a1', '#ffe23d', '#ffd000'],
   fire: ['#fff3a0', '#ffb030', '#ff5a1f', '#e8261a'],
@@ -14,6 +17,12 @@ const TYPE_COLORS = {
   steel: ['#ffffff', '#d4dbe6', '#9aa6b8'],
   flying: ['#ffffff', '#d8ecff', '#a8d0ff'],
   dragon: ['#e0d0ff', '#9b6bff', '#6a3be0'],
+  ice: ['#ffffff', '#d6f6ff', '#9be7ff', '#5cc8f0'],
+  fairy: ['#fff0fa', '#ffb8e6', '#ff7fd0', '#e8a6ff'],
+  dark: ['#8a6bb8', '#4b3270', '#2a1a40', '#6a4a8f'],
+  psychic: ['#ffd6f0', '#ff8ad0', '#d65cff', '#ff5ca8'],
+  fighting: ['#fff3c4', '#ffb35c', '#e85c2a', '#7fc8ff'],
+  rock: ['#e8d8b0', '#c9a86a', '#8d7348'],
 };
 
 export class FX {
@@ -173,16 +182,16 @@ export class FX {
       this.addEffect({
         duration: spec.duration,
         update: (e, dt) => {
-          spec.update && spec.update(this, e, dt, from, to, r);
+          spec.update && spec.update(this, e, dt, from, to, r, type);
           if (!hit && e.t >= spec.hitAt) {
             hit = true;
-            spec.onHit && spec.onHit(this, from, to, r);
+            spec.onHit && spec.onHit(this, from, to, r, type);
             aftermath(this, type, r, to);
             onHit && onHit();
           }
           if (e.t + dt >= spec.duration) setTimeout(resolve, 50);
         },
-        draw: (ctx, e) => spec.draw && spec.draw(this, ctx, e, from, to, r),
+        draw: (ctx, e) => spec.draw && spec.draw(this, ctx, e, from, to, r, type),
       });
     });
   }
@@ -238,6 +247,21 @@ function aftermath(fx, type, r, to) {
         break;
       case 'electric':
         fx.spawn({ ...p, size: rand(4, 9), color: pick(cols), glow: true, life: rand(0.15, 0.4), t: -rand(0, 0.9) });
+        break;
+      case 'ice':   // 눈송이가 내려앉음
+        if (i < 14) fx.spawn({ ...p, shape: 'text', text: '❄', color: '#e8fbff', stroke: '#5cc8f0', vx: rand(-20, 20), vy: rand(10, 40), vr: rand(-2, 2), size: rand(12, 20), life: 1.8, t: -rand(0, 0.6) });
+        break;
+      case 'fairy':
+        if (i < 14) fx.spawn({ ...p, shape: 'text', text: pick(['✨', '💗', '⭐']), vy: rand(-50, -20), size: rand(14, 22), life: 1.5, t: -rand(0, 0.5) });
+        break;
+      case 'psychic':
+        if (i < 8) fx.spawn({ ...p, shape: 'ring', color: pick(cols), size: 4, grow: 90, life: 0.6, t: -rand(0, 0.7) });
+        break;
+      case 'dark':   // 어두운 연기가 피어오름
+        fx.spawn({ ...p, vy: rand(-60, -20), vx: rand(-15, 15), size: rand(10, 18), grow: 16, color: pick(cols), life: rand(0.9, 1.5), t: -rand(0, 0.6) });
+        break;
+      case 'rock':
+        fx.spawn({ ...p, vx: rand(-60, 60), vy: rand(-140, -40), ay: 700, size: rand(4, 8), color: pick(cols), life: 1, t: -rand(0, 0.3) });
         break;
       default:
         if (i < 10) fx.spawn({ ...p, shape: 'star', vx: rand(-80, 80), vy: rand(-120, -20), ay: 200, vr: rand(-5, 5), size: rand(7, 12), color: pick(cols), life: 1 });
@@ -444,4 +468,175 @@ const MOVE_FX = {
       }
     },
   },
+
+  // ---------- 타입 색을 따르는 범용 연출 (새 포켓몬 기술용) ----------
+  // 줄기: 열탕 등
+  stream: {
+    duration: 1.4, hitAt: 0.35,
+    update(fx, e, dt, from, to, r, type) {
+      if (e.t < 1.0) stream(fx, from, to, dt, { rate: 160, speed: 760, spread: 0.07, cols: TYPE_COLORS[type] || TYPE_COLORS.normal, size: 10, glow: type !== 'water' });
+    },
+  },
+  // 빛나는 구체가 날아가 터짐: 파동탄·문포스·에너지볼·매지컬플레임
+  orb: {
+    duration: 1.3, hitAt: 0.55,
+    draw(fx, ctx, e, from, to, r, type) {
+      const cols = TYPE_COLORS[type] || TYPE_COLORS.normal;
+      if (e.t < 0.2) {   // 손끝에 힘을 모음
+        const s = 6 + (e.t / 0.2) * 16;
+        glowBall(ctx, from.x, from.y, s, cols);
+        return;
+      }
+      if (e.t >= 0.55) return;
+      const k = (e.t - 0.2) / 0.35, x = lerp(from.x, to.x, k), y = lerp(from.y, to.y, k);
+      glowBall(ctx, x, y, 22 + Math.sin(e.t * 40) * 3, cols);
+      fx.spawn({ x, y, size: 9, color: pick(cols), glow: true, life: 0.3, grow: -18 });
+    },
+    onHit(fx, from, to, r, type) { fx.burst(to.x, to.y, type, 40, 380); fx.flash = 0.15; },
+  },
+  // 굵은 광선: 냉동빔·매지컬샤인·환상빔
+  beam: {
+    duration: 1.3, hitAt: 0.15,
+    draw(fx, ctx, e, from, to, r, type) {
+      if (e.t > 1.05) return;
+      const cols = TYPE_COLORS[type] || TYPE_COLORS.normal;
+      const k = Math.min(1, e.t / 0.12), x = lerp(from.x, to.x, k), y = lerp(from.y, to.y, k);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+      for (const [w, c] of [[34, cols[cols.length - 1]], [20, cols[1] || cols[0]], [7, '#ffffff']]) {
+        ctx.globalAlpha = w > 30 ? 0.45 : 0.9;
+        ctx.strokeStyle = c; ctx.lineWidth = w * (0.9 + Math.random() * 0.2);
+        ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(x, y); ctx.stroke();
+      }
+      ctx.restore();
+      if (type === 'psychic') {   // 환상빔은 고리가 빔을 따라 흐름
+        const t = (e.t * 3) % 1;
+        fx.spawn({ shape: 'ring', x: lerp(from.x, to.x, t), y: lerp(from.y, to.y, t), color: '#ff8ad0', size: 10, grow: 20, life: 0.2 });
+      }
+    },
+    update(fx, e, dt, from, to, r, type) {
+      if (e.t > 0.15 && e.t < 1.05 && Math.random() < 0.6) fx.burst(to.x, to.y, type, 2, 200);
+    },
+  },
+  // 작은 탄 여러 개: 얼음뭉치·진공파·파워젬·가시캐논
+  shards: {
+    duration: 1.0, hitAt: 0.4,
+    update(fx, e, dt, from, to, r, type) {
+      if (e.t < 0.35 && Math.random() < dt * 20) {
+        const v = Math.hypot(to.x - from.x, to.y - from.y) / 0.38;
+        const a = Math.atan2(to.y - from.y, to.x - from.x) + rand(-0.1, 0.1);
+        fx.spawn({ shape: 'star', x: from.x, y: from.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vr: 14, size: 9, color: pick(TYPE_COLORS[type] || TYPE_COLORS.normal), life: 0.38, noFade: true });
+      }
+    },
+  },
+  // 휘몰아치는 폭풍: 눈보라(눈송이)·리프스톰(나뭇잎)
+  blizzard: {
+    duration: 1.9, hitAt: 0.5,
+    update(fx, e, dt, from, to, r, type) {
+      if (e.t > 1.4) return;
+      const d = Math.hypot(to.x - from.x, to.y - from.y), base = Math.atan2(to.y - from.y, to.x - from.x);
+      for (let i = 0; i < 5; i++) {
+        const a = base + rand(-0.3, 0.3), v = rand(500, 750);
+        const p = { x: from.x, y: from.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: d / v + 0.3, vr: rand(-8, 8), wobble: 12 };
+        if (type === 'grass') fx.spawn({ ...p, shape: 'leaf', size: rand(6, 10), color: pick(TYPE_COLORS.grass) });
+        else if (i % 2) fx.spawn({ ...p, shape: 'text', text: '❄', color: '#ffffff', stroke: '#5cc8f0', size: rand(12, 18) });
+        else fx.spawn({ ...p, size: rand(3, 6), color: '#ffffff', glow: true });
+      }
+    },
+    onHit(fx) { fx.flash = 0.12; },
+  },
+  // 대상 주위로 염력 고리가 조여듦: 사이코키네시스·염동력
+  psywave: {
+    duration: 1.4, hitAt: 0.45,
+    draw(fx, ctx, e, from, to) {
+      if (e.t > 1.2) return;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      // 시전자의 눈이 빛남
+      glowBall(ctx, from.x, from.y - 6, 10 + Math.sin(e.t * 30) * 3, TYPE_COLORS.psychic);
+      for (let i = 0; i < 3; i++) {
+        const k = ((e.t * 1.6 + i / 3) % 1);
+        ctx.strokeStyle = `rgba(255,120,210,${0.9 * (1 - k)})`; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.ellipse(to.x, to.y, 140 * (1 - k) + 10, 90 * (1 - k) + 8, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    },
+  },
+  // 동심원 파동이 퍼져 나감: 악의파동·나이트버스트·하이퍼보이스·차밍보이스
+  ringwave: {
+    duration: 1.3, hitAt: 0.45,
+    update(fx, e, dt, from, to, r, type) {
+      if (e.t < 0.6 && Math.random() < dt * 14) {
+        const v = Math.hypot(to.x - from.x, to.y - from.y) / 0.45;
+        const a = Math.atan2(to.y - from.y, to.x - from.x);
+        const cols = TYPE_COLORS[type] || TYPE_COLORS.normal;
+        fx.spawn({ shape: 'ring', x: from.x, y: from.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, size: 12, grow: 70, color: type === 'dark' ? cols[0] : pick(cols), life: 0.45, noFade: true });
+        if (type === 'fairy') fx.spawn({ shape: 'text', text: '♪', color: '#ff7fd0', x: from.x, y: from.y, vx: Math.cos(a) * v * 0.8, vy: Math.sin(a) * v * 0.8 - 30, size: 20, life: 0.5 });
+      }
+    },
+  },
+  // 반짝이는 바람: 요정의바람·얼다바람
+  sparkle: {
+    duration: 1.3, hitAt: 0.45,
+    update(fx, e, dt, from, to, r, type) {
+      if (e.t > 0.9) return;
+      const emoji = type === 'ice' ? ['❄', '✦'] : ['✨', '💗', '✦'];
+      if (Math.random() < dt * 30) {
+        const v = Math.hypot(to.x - from.x, to.y - from.y) / 0.5;
+        const a = Math.atan2(to.y - from.y, to.x - from.x) + rand(-0.2, 0.2);
+        fx.spawn({ shape: 'text', text: pick(emoji), color: type === 'ice' ? '#e8fbff' : '#ff9ad8', x: from.x, y: from.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, wobble: 10, vr: 4, size: rand(14, 22), life: 0.5, noFade: true });
+      }
+    },
+  },
+  // 하트 뽀뽀: 드레인키스
+  kiss: {
+    duration: 1.5, hitAt: 0.5,
+    update(fx, e, dt, from, to) {
+      if (e.t < 0.4 && Math.random() < dt * 12) {
+        const v = Math.hypot(to.x - from.x, to.y - from.y) / 0.5;
+        const a = Math.atan2(to.y - from.y, to.x - from.x) + rand(-0.12, 0.12);
+        fx.spawn({ shape: 'text', text: pick(['💋', '💗']), x: from.x, y: from.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, size: 24, life: 0.5, noFade: true });
+      }
+    },
+    onHit(fx, from, to) {   // 기운을 쪽 빨아와 시전자에게 돌아감
+      for (let i = 0; i < 6; i++) fx.spawn({ shape: 'text', text: '💖', x: to.x, y: to.y, vx: (from.x - to.x) / 0.8, vy: (from.y - to.y) / 0.8, size: 16, life: 0.8, t: -i * 0.08 });
+    },
+  },
+  // 콱 깨물기
+  bite: {
+    duration: 0.8, hitAt: 0.15,
+    draw(fx, ctx, e, from, to) {
+      if (e.t > 0.45) return;
+      const k = Math.min(1, e.t / 0.15), gap = 46 * (1 - k) + 4;
+      ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#3a2350'; ctx.lineWidth = 2;
+      for (const dir of [-1, 1]) {
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const x = to.x - 50 + i * 25, y = to.y + dir * gap;
+          ctx.moveTo(x, y); ctx.lineTo(x + 12.5, y - dir * 22); ctx.lineTo(x + 25, y);
+        }
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
+    },
+    onHit(fx, from, to) { fx.spawn({ shape: 'text', text: '💢', x: to.x + 40, y: to.y - 40, size: 34, life: 0.6 }); },
+  },
+  // 하늘에서 불덩이가 쏟아짐: 분화
+  eruption: {
+    duration: 2.0, hitAt: 0.6,
+    update(fx, e, dt, from, to, r) {
+      if (e.t < 0.5) {   // 등에서 불기둥이 솟음
+        for (let i = 0; i < 4; i++) fx.spawn({ x: from.x + rand(-10, 10), y: from.y - 10, vx: rand(-60, 60), vy: rand(-420, -260), ay: 300, size: rand(8, 14), color: pick(TYPE_COLORS.fire), glow: true, life: 0.6 });
+      } else if (e.t < 1.5 && Math.random() < dt * 18) {
+        const p = randIn(r);
+        fx.spawn({ x: p.x + rand(-80, 80), y: -20, vx: rand(-40, 40), vy: 900, size: rand(12, 20), color: pick(TYPE_COLORS.fire), glow: true, life: (p.y + 20) / 900 });
+      }
+    },
+    onHit(fx) { fx.flash = 0.3; },
+  },
 };
+
+function glowBall(ctx, x, y, s, cols) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, s);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, cols[1] || cols[0]); g.addColorStop(1, (cols[cols.length - 1]).slice(0, 7) + '00');
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}

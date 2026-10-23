@@ -1,0 +1,13 @@
+Source: PMD SpriteCollab (https://sprites.pmdcollab.org/#/0570)
+License: CC BY-NC 4.0
+
+[Sprite]
+2021-07-21 06:07:23.440734	<@!356635814668664832>	CUR	PMDCollab_1	Attack,Charge,Cringe,DeepBreath,Double,Eat,EventSleep,Faint,Float,Head,HitGround,Hop,Hurt,Idle,Laying,LeapForth,LookUp,LostBalance,Nod,Pain,Pose,Pull,Rotate,Shoot,Sink,Sit,Sleep,Swing,Trip,Tumble,TumbleBack,Wake,Walk
+2022-03-23 15:59:22.196469	<@!356635814668664832>	CUR	PMDCollab_1	Charge,Shoot
+2023-04-04 21:48:37.553294	<@!544245909639397378>	CUR	PMDCollab_1	Idle,Walk,Sleep,Hurt,Attack,Charge,Shoot,Swing,Double,Rotate,Hop,EventSleep,Wake,Eat,Tumble,Pose,Pull,Pain,Float,DeepBreath,Nod,Sit,LookUp,Sink,Trip,Laying,LeapForth,Head,Cringe,LostBalance,TumbleBack,HitGround,Faint
+2026-08-01 17:48:10.837552	<@!356635814668664832>	CUR	CC_BY-NC_4	Laying
+2026-08-01 18:19:41.960799	<@!356635814668664832>	CUR	CC_BY-NC_4	Laying
+
+[Portrait]
+2024-11-17 04:20:39.598568	<@!544245909639397378>	CUR	CC_BY-NC_4	Normal,Sad,Joyous,Normal^,Sad^,Joyous^,Happy,Crying,Inspired,Sigh,Happy^,Crying^,Inspired^,Sigh^,Pain,Shouting,Surprised,Stunned,Pain^,Shouting^,Surprised^,Stunned^,Angry,Teary-Eyed,Dizzy,Angry^,Teary-Eyed^,Dizzy^,Worried,Determined,Worried^,Determined^
+2024-11-27 21:38:19.696229	<@!207815740399681538>	CUR	CC_BY-NC_4	Special0,Special0^

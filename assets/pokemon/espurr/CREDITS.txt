@@ -1,0 +1,8 @@
+Source: PMD SpriteCollab (https://sprites.pmdcollab.org/#/0677)
+License: CC BY-NC 4.0
+
+[Sprite]
+2021-04-21 22:34:49.606536	<@!319945906600411179>	CUR	PMDCollab_1	Walk,Attack,QuickStrike,Strike,SpAttack,RearUp,Sleep,Hurt,Idle,Swing,Double,Hop,Charge,Rotate,EventSleep,Wake,Eat,Tumble,Pose,Pull,Pain,Float,DeepBreath,Nod,Sit,LookUp,Sink,Trip,Laying,LeapForth,Head,Cringe,LostBalance,TumbleBack,Faint,HitGround
+
+[Portrait]
+2025-05-11 06:21:17.279968	<@!544245909639397378>	CUR	CC_BY-NC_4	Normal,Sad,Joyous,Happy,Crying,Inspired,Sigh,Pain,Shouting,Surprised,Stunned,Angry,Teary-Eyed,Dizzy,Worried,Determined
