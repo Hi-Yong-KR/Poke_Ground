@@ -6,6 +6,11 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // 시트의 행 순서: 아래, 오른아래, 오른, 오른위, 위, 왼위, 왼, 왼아래
 const OCT_TO_ROW = [2, 1, 0, 7, 6, 5, 4, 3];
+const CRY_PITCH = {
+  Happy: 1.12, Joyous: 1.2, Inspired: 1.08, Surprised: 1.15,
+  Sad: 0.86, Crying: 0.82, 'Teary-Eyed': 0.88, Pain: 0.9, Sigh: 0.85, Dizzy: 0.88, Worried: 0.95,
+  Angry: 0.94, Shouting: 1.0, Determined: 1.0,
+};
 
 export async function loadSpecies(key) {
   const base = `/assets/pokemon/${key}/`;
@@ -140,11 +145,25 @@ export class Mon {
     const emo = this.sp.emotions.includes(emotion) ? emotion : 'Normal';
     this.bubble.querySelector('img').src = `${this.sp.base}portrait/${emo}.png`;
     this.bubble.querySelector('.cry').textContent = cry ? pick(this.def.cries) : '';
+    if (cry) this.playCry(emo);
     this.bubble.querySelector('.sum').textContent = text;
     this.bubble.classList.add('show');
     clearTimeout(this.bubbleTimer);
     this.bubbleTimer = setTimeout(() => this.bubble.classList.remove('show'), 4200);
     if (text) this.app.log(`${this.name}: ${text}`, 'sys');
+  }
+
+  /** 울음소리 재생. 감정에 따라 높낮이를 바꿔 기쁘면 높게, 슬프면 낮게 운다 */
+  playCry(emotion = 'Normal') {
+    if (!this.app.config.sound) return;
+    const now = performance.now();
+    if (now - (this.lastCry || 0) < 700) return;   // 연달아 겹쳐 울지 않게
+    this.lastCry = now;
+    const a = new Audio(`${this.sp.base}cry.ogg`);
+    a.preservesPitch = false;
+    a.playbackRate = CRY_PITCH[emotion] ?? 1;
+    a.volume = 0.55;
+    a.play().catch(() => { /* 울음소리 파일이 없으면 조용히 넘어감 */ });
   }
 
   /** 리액션 실행: 애니메이션 + 감정 파티클 + 요약 텍스트 */

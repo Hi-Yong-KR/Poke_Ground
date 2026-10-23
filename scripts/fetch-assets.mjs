@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master';
+const CRIES = 'https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest';
 
 export const POKEMON = {
   pikachu: '0025',
@@ -80,6 +81,13 @@ async function fetchPokemon(key, id) {
     }
     emotions.push(e);
   }));
+
+  // 울음소리: PokeAPI/cries (게임 원음, 저작권 Nintendo/Game Freak → 저장소에는 올리지 않음)
+  const cryOut = path.join(dir, 'cry.ogg');
+  if (!(await exists(cryOut))) {
+    const cry = await get(`${CRIES}/${Number(id)}.ogg`);
+    if (cry) await writeFile(cryOut, cry);
+  }
 
   const credits = await get(`${RAW}/sprite/${id}/credits.txt`);
   const pcredits = await get(`${RAW}/portrait/${id}/credits.txt`);

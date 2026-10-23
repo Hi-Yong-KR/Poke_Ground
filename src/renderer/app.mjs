@@ -484,6 +484,7 @@ poke.onEvent(({ type, payload }) => {
   if (type === 'toggle-bar') setBar(payload === true ? true : bar.classList.contains('collapsed'));
   else if (type === 'party') syncParty(payload);
   else if (type === 'voice') (payload ? startVoice() : voice.stop());
+  else if (type === 'sound') app.config.sound = payload;
   else if (type === 'summon') Object.keys(POKEMON).forEach((k) => ensureMon(k));
 });
 

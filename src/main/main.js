@@ -13,7 +13,7 @@ const HOTKEY = 'Control+Alt+Space';
 
 let win = null;
 let tray = null;
-let config = { party: ['pikachu', 'charizard', 'squirtle'], voice: true };
+let config = { party: ['pikachu', 'charizard', 'squirtle'], voice: true, sound: true };
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
 function loadConfig() {
@@ -27,7 +27,7 @@ function saveConfig() {
 // 렌더러를 http://127.0.0.1 로 서빙: 마이크(보안 컨텍스트)와 음성 모델 fetch를 위해
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.json': 'application/json', '.gz': 'application/gzip',
+  '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.json': 'application/json', '.gz': 'application/gzip', '.ogg': 'audio/ogg',
 };
 function startServer() {
   return new Promise((resolve) => {
@@ -158,6 +158,7 @@ function menuTemplate() {
     })),
     { type: 'separator' },
     { label: '음성인식', type: 'checkbox', checked: config.voice, click: (item) => { config.voice = item.checked; saveConfig(); send('voice', config.voice); } },
+    { label: '울음소리', type: 'checkbox', checked: config.sound, click: (item) => { config.sound = item.checked; saveConfig(); send('sound', config.sound); } },
     { label: '모두 불러오기', click: () => send('summon') },
     { label: '개발자 도구', click: () => win.webContents.openDevTools({ mode: 'detach' }) },
     { type: 'separator' },
@@ -173,7 +174,7 @@ async function createWindow() {
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
     skipTaskbar: true, alwaysOnTop: true, show: false, title: 'PokeAction',
     backgroundColor: '#00000000',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setIgnoreMouseEvents(true, { forward: true });
