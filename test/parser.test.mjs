@@ -79,6 +79,10 @@ test('받아쓰기 필터(Whisper): 조사·어미가 붙어도 명령은 통과
   const v = acceptTranscript('피카츄야 크롬 공격해');
   assert.equal(parseCommand(v.text).attack, true);
   assert.deepEqual(parseCommand(acceptTranscript('피카츄 크롬 십만 볼트').text).move, 'thunderbolt');
+  // 실제 Whisper 출력: 대상과 기술을 붙여 받아씀 ("크롬 십만볼트" → "그롬싱만볼트")
+  const glued = parseCommand(acceptTranscript('피카츄 그롬싱만볼트').text);
+  assert.equal(glued.move, 'thunderbolt');
+  assert.equal(glued.targetKey, parseCommand('피카츄 크롬 공격').targetKey);
 });
 
 test('받아쓰기 필터(Whisper): 잡담은 거부', () => {

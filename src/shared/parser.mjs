@@ -89,10 +89,14 @@ export function parseCommand(text) {
     const w = stripParticle(lo.text);
     if (w.length < 2) continue;
     let best = null, bestScore = 0;
-    for (const entry of FUZZY_ENTRIES) {
-      if (Math.abs(entry.alias.length - w.length) > 1) continue;
-      const s = similarity(w, entry.alias);
-      if (s > bestScore) { bestScore = s; best = entry; }
+    // 음성인식이 옆 단어의 한 글자를 붙여 받아쓰기도 해서("그롬싱만볼트") 앞/뒤 한 글자를 뗀 것도 맞춰 본다
+    const tries = w.length >= 3 ? [w, w.slice(0, -1), w.slice(1)] : [w];
+    for (const t of tries) {
+      for (const entry of FUZZY_ENTRIES) {
+        if (Math.abs(entry.alias.length - t.length) > 1) continue;
+        const s = similarity(t, entry.alias);
+        if (s > bestScore) { bestScore = s; best = entry; }
+      }
     }
     if (best && bestScore >= 0.78) mark(best, lo.start, lo.start + lo.text.length, true);
     else targetWords.push(w);
@@ -201,17 +205,23 @@ function snapWord(w) {
   const s = stripParticle(c);
   if (ENTRY_OF.has(s)) return s;
   const e = ENTRIES.find((x) => x.alias.length >= 2 && c.startsWith(x.alias));   // 긴 별칭부터
-  return e ? e.alias : w;
+  if (e) return e.alias;
+  // 붙여 받아쓴 말 속의 할 일 ("그롬싱만볼트" → "만볼트"). 대상 이름은 parseCommand가 퍼지로 찾는다
+  const inner = ENTRIES.find((x) => x.alias.length >= 2 && INTENT_KINDS.has(x.kind) && c.includes(x.alias));
+  return inner ? inner.alias : w;
 }
+const INTENT_KINDS = new Set(['move', 'attack', 'action']);
 
 /**
  * 받아쓰기형 엔진(Whisper) 결과용 필터. 문법 제한·단어 신뢰도가 없으므로
- * 단어를 명령 단어로 맞춘 뒤 acceptVoice와 같은 기준(포켓몬 이름으로 시작, 짧게, 할 일 1가지)으로 거른다.
+ * 단어를 명령 단어로 맞춰 acceptVoice와 같은 기준(포켓몬 이름으로 시작, 짧게, 할 일 1가지)으로 거른다.
  */
 export function acceptTranscript(text) {
-  const words = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean)
-    .map((w) => ({ word: snapWord(w), conf: 1 }));
-  return acceptVoice(text, words);
+  const clean = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  const words = clean.split(' ').filter(Boolean).map((w) => ({ word: snapWord(w), conf: 1 }));
+  const v = acceptVoice(clean, words);
+  // 통과하면 원문을 넘긴다: 맞춰 본 단어만 넘기면 "그롬"(크롬) 같은 대상이 빠진다
+  return v.ok ? { ok: true, text: clean } : v;
 }
 
 /** 해석 결과와 화면 객체 목록으로 공격 대상을 고른다. objects: [{kind,name,process,cls,x,y,w,h,z}] */

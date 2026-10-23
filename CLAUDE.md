@@ -10,7 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm install                 # electron, vosk-browser
 npm run setup               # fetch-assets(스프라이트·초상화·울음소리) + fetch-whisper(.venv에 faster-whisper 설치 + small 모델 480MB; 파이썬이 없으면 uv로 .python에 받음)
 npm run fetch-voice         # 예비용 Vosk 한국어 모델 87MB (Whisper를 못 쓸 때만 필요)
-npm start                   # 앱 실행 (start.bat은 위 과정을 필요할 때만 자동 수행)
+npm start                   # 앱 실행
+start.bat                   # 배포용 진입점: 준비가 다 됐으면 바로 실행, 아니면 scripts/setup.ps1(Node 없으면 .node에 받기 → npm install → 에셋 → Whisper)
 npm test                    # node --test test/parser.test.mjs
 node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스트 하나만
 ```
@@ -47,7 +48,8 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
 - **Whisper 환각 필터**(`whisper_worker.py`의 `MIN_LOGPROB` 등): 힌트 단어를 주면 소음에서 "피카츄"/"크롬"을 지어낸다(로그확률 -1.1~-2.2). 명령은 -0.5 이상. 기준을 풀면 소음이 이름 부르기 명령으로 통과하니 주의.
 - **음성 필터 기준값**(`VOICE_MIN_CONF` 등)은 TTS로 만든 명령/잡담 샘플을 실제 엔진에 넣어 측정해 정했다. 바꿀 때는 test의 "실제로 측정된 잡담 오인식" 케이스가 계속 거부되는지 확인.
 - **파이썬**: `setup-whisper.ps1`이 `.venv` → 시스템 `python` → `py -3` 순으로 3.9+를 찾고, 없으면 uv(버전·SHA256 고정)로 `.python`에 3.12를 받아 `setup-whisper.py`를 실행한다(`-Private`로 그 경로 강제 테스트). WindowsApps의 가짜 python.exe는 실행해 봐서 걸러낸다. 시스템 파이썬은 설치 스크립트 실행에만 쓰고, 워커는 항상 `.venv\Scripts\python.exe -I`로 돈다. 워커 출력은 `json.dumps` 기본(ASCII 이스케이프)이라 콘솔 코드페이지(cp949)와 무관하다.
-- **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.venv/`, `assets/models/`(Whisper·Vosk), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.
+- **start.bat**: cmd는 UTF-8 한글을 cp949로 읽어 줄이 깨질 수 있으므로 ASCII만 쓰고, CRLF여야 `goto`가 동작한다(.gitattributes로 고정). 한글 안내 문구는 `setup.ps1`(UTF-8 BOM)에서 낸다. `-PrivateNode`로 개인 Node 경로를 강제 테스트할 수 있다.
+- **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.node/`, `.python/`, `.venv/`, `assets/models/`(Whisper·Vosk), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.
 - 시스템 설정(Windows 마이크 개인정보·장치 사용 여부)은 앱이 바꾸지 않는다. 원인 표시와 `ms-settings:` 열기까지만 한다.
 
 ## 실행 중인 앱 디버깅

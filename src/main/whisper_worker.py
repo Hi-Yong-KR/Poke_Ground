@@ -21,6 +21,10 @@ NO_SPEECH = 0.5      # 무음 확률이 이보다 높으면
 NO_SPEECH_LOGPROB = -0.6   # 로그확률 기준을 이만큼 엄하게
 
 
+# Node는 UTF-8로 쓰는데 Windows 파이썬은 파이프를 cp949로 읽어 힌트 단어(한글)가 깨진다
+sys.stdin.reconfigure(encoding='utf-8')
+
+
 def out(obj):
     sys.stdout.write(json.dumps(obj) + '\n')
     sys.stdout.flush()
