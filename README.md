@@ -7,7 +7,7 @@
 ## 실행
 
 `start.bat`을 더블클릭하세요. 처음 실행할 때 필요한 것을 자동으로 설치하고 받아옵니다.
-[Node.js](https://nodejs.org)와 음성인식용 [Python](https://www.python.org) 3.9 이상이 설치돼 있어야 합니다.
+[Node.js](https://nodejs.org)만 설치돼 있으면 됩니다. 음성인식에 쓰는 파이썬은 PC에 있으면 그걸 쓰고, 없으면 이 폴더 안(`.python`)에만 따로 받아 씁니다 (관리자 권한 필요 없음, 폴더를 지우면 함께 사라짐).
 
 ```bash
 npm install
@@ -65,9 +65,10 @@ npm start
 ## 음성과 텍스트
 
 - 음성인식은 **인터넷 없이** 동작하는 **Faster-Whisper small** 모델을 씁니다. GPU 없이 CPU만 쓰고, 불러올 때 **INT8로 양자화**해서 메모리 약 0.5GB, 한 문장 인식에 1초 안팎이라 저사양 PC에서도 돌아갑니다(CPU 스레드는 최대 4개만 사용).
-  - 처음 한 번 `npm run fetch-whisper`(start.bat이 자동 실행)가 `.venv` 파이썬 가상환경에 faster-whisper를 설치하고 모델(약 480MB)을 받습니다.
+  - 처음 한 번 `npm run fetch-whisper`(start.bat이 자동 실행)가 `.venv` 파이썬 가상환경에 faster-whisper를 설치하고 모델(약 480MB)을 받습니다. 파이썬이 없으면 [uv](https://github.com/astral-sh/uv)로 파이썬 3.12(약 21MB)를 `.python`에 먼저 받습니다.
+  - 소음에서 "피카츄"처럼 힌트 단어를 지어내는 Whisper 특성이 있어서, 인식 확신도가 낮은 결과는 버립니다.
   - 말소리가 들리는 구간만 잘라서 인식하고, 포켓몬·기술 이름을 힌트로 줘서 그 단어로 더 잘 받아씁니다. "피카츄야", "공격해"처럼 붙은 말은 명령 단어로 맞춰 읽어요.
-  - Whisper를 못 쓰는 경우(파이썬 없음 등)엔 예비용 Vosk 소형 모델(`npm run fetch-voice`)로 대신합니다. 지금 쓰는 엔진은 `⚙ 장치`에서 보여요.
+  - Whisper 설치에 실패한 경우(인터넷 끊김 등)엔 예비용 Vosk 소형 모델(`npm run fetch-voice`)로 대신합니다. 지금 쓰는 엔진은 `⚙ 장치`에서 보여요.
 - 주변 대화에 반응하지 않도록 음성 명령은 다음 조건을 모두 만족해야 실행됩니다. 걸러진 말은 로그에 `🎤 (명령 아님: 이유)`로 표시돼요.
   - **포켓몬 이름(또는 '모두')으로 시작** — "피카츄 크롬 공격" ⭕ / "크롬 공격해 피카츄" ❌
   - **짧게** (5단어 이하), **할 일은 한 가지** ("피카츄 점프 춤춰" ❌)
@@ -88,7 +89,7 @@ src/main/scanner.ps1   화면 객체 스캐너(상주 PowerShell) ─ scanner.cs
 src/shared/parser.mjs  명령 해석(한글 자모 퍼지매칭으로 오타/오인식 보정), 대상 찾기
 src/shared/data.mjs    포켓몬·기술·행동·리액션 정의
 src/renderer/          포켓몬 애니메이션(pokemon.mjs), 기술 이펙트(fx.mjs), 음성(speech.mjs), 앱(app.mjs)
-scripts/               에셋 다운로드, 음성인식 설치(setup-whisper.py)
+scripts/               에셋 다운로드, 음성인식 설치(setup-whisper.ps1 → 파이썬 찾기/받기, setup-whisper.py → 설치)
 test/                  명령 해석 테스트 (npm test)
 ```
 

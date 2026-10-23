@@ -1,5 +1,6 @@
 node_modules/
 .venv/
+.python/
 assets/models/
 assets/_test/
 assets/pokemon/*/cry.ogg

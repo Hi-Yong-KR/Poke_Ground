@@ -1,7 +1,7 @@
 # 오프라인 한국어 음성인식(Faster-Whisper small) 준비: 파이썬 가상환경 .venv 를 만들고
 # faster-whisper를 설치한 뒤 small 모델(약 480MB)을 받는다. CPU 전용이라 GPU 없는 저사양 PC에서도 돈다
 # (불러올 때 INT8로 양자화해서 메모리 약 0.5GB).
-# 사용법: python scripts/setup-whisper.py   (또는 npm run fetch-whisper)
+# 사용법: npm run fetch-whisper (setup-whisper.ps1이 파이썬을 찾거나, 없으면 받아서 이 파일을 실행한다)
 import os
 import subprocess
 import venv

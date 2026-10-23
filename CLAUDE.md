@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm install                 # electron, vosk-browser
-npm run setup               # fetch-assets(스프라이트·초상화·울음소리) + fetch-whisper(.venv에 faster-whisper 설치 + small 모델 480MB)
+npm run setup               # fetch-assets(스프라이트·초상화·울음소리) + fetch-whisper(.venv에 faster-whisper 설치 + small 모델 480MB; 파이썬이 없으면 uv로 .python에 받음)
 npm run fetch-voice         # 예비용 Vosk 한국어 모델 87MB (Whisper를 못 쓸 때만 필요)
 npm start                   # 앱 실행 (start.bat은 위 과정을 필요할 때만 자동 수행)
 npm test                    # node --test test/parser.test.mjs
@@ -44,8 +44,9 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
 - **인코딩(PowerShell 5.1)**: `Get-Content`/`Set-Content`로 한글 파일을 고치면 깨진다 — 파일 편집은 Edit/Write 도구로. `scanner.ps1`·`scanner.cs`는 **UTF-8 BOM**이어야 PowerShell 5.1이 읽는다. 한글 커밋 메시지는 PowerShell 인자로 넘기면 실패하므로 파일로 써서 `git commit -F`.
 - **DPI**: 이 PC는 125% 배율. 렌더러 좌표(CSS px) × `devicePixelRatio` = 물리 좌표. 스캐너는 물리 좌표를 낸다.
 - **장치 ID**: 서버 포트가 매번 바뀌어 origin이 달라지므로 `deviceId`가 실행마다 바뀐다 → 장치는 **이름(label)으로 저장**하고 실행 시 id를 다시 찾는다.
+- **Whisper 환각 필터**(`whisper_worker.py`의 `MIN_LOGPROB` 등): 힌트 단어를 주면 소음에서 "피카츄"/"크롬"을 지어낸다(로그확률 -1.1~-2.2). 명령은 -0.5 이상. 기준을 풀면 소음이 이름 부르기 명령으로 통과하니 주의.
 - **음성 필터 기준값**(`VOICE_MIN_CONF` 등)은 TTS로 만든 명령/잡담 샘플을 실제 엔진에 넣어 측정해 정했다. 바꿀 때는 test의 "실제로 측정된 잡담 오인식" 케이스가 계속 거부되는지 확인.
-- **파이썬**: 시스템 파이썬은 `scripts/setup-whisper.py` 실행에만 쓰고, 워커는 항상 `.venv\Scripts\python.exe -I`로 돈다. 워커 출력은 `json.dumps` 기본(ASCII 이스케이프)이라 콘솔 코드페이지(cp949)와 무관하다.
+- **파이썬**: `setup-whisper.ps1`이 `.venv` → 시스템 `python` → `py -3` 순으로 3.9+를 찾고, 없으면 uv(버전·SHA256 고정)로 `.python`에 3.12를 받아 `setup-whisper.py`를 실행한다(`-Private`로 그 경로 강제 테스트). WindowsApps의 가짜 python.exe는 실행해 봐서 걸러낸다. 시스템 파이썬은 설치 스크립트 실행에만 쓰고, 워커는 항상 `.venv\Scripts\python.exe -I`로 돈다. 워커 출력은 `json.dumps` 기본(ASCII 이스케이프)이라 콘솔 코드페이지(cp949)와 무관하다.
 - **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.venv/`, `assets/models/`(Whisper·Vosk), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.
 - 시스템 설정(Windows 마이크 개인정보·장치 사용 여부)은 앱이 바꾸지 않는다. 원인 표시와 `ms-settings:` 열기까지만 한다.
 

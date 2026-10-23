@@ -8,8 +8,8 @@
     "start": "electron .",
     "fetch-assets": "node scripts/fetch-assets.mjs",
     "fetch-voice": "node scripts/fetch-voice-model.mjs",
-    "fetch-whisper": "python scripts/setup-whisper.py",
-    "setup": "node scripts/fetch-assets.mjs && python scripts/setup-whisper.py",
+    "fetch-whisper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-whisper.ps1",
+    "setup": "node scripts/fetch-assets.mjs && npm run fetch-whisper",
     "test": "node --test test/parser.test.mjs"
   },
   "dependencies": {

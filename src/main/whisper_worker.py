@@ -14,8 +14,11 @@ from faster_whisper import WhisperModel
 
 MODEL_DIR = sys.argv[1]
 THREADS = max(1, min(4, os.cpu_count() or 1))   # 저사양 PC에서 다른 작업을 막지 않게 최대 4스레드
-NO_SPEECH = 0.6     # 말소리가 아닐 확률이 이보다 높고
-MIN_LOGPROB = -1.0  # 평균 로그확률이 이보다 낮은 구간은 버린다 (소음에서 지어낸 문장 방지)
+# 소음에서 지어낸 문장 거르기. 측정값: 명령(TTS)은 평균 로그확률 -0.5 이상·무음 확률 0.02 이하,
+# 소음은 힌트 단어("피카츄", "크롬")를 지어내는데 로그확률 -1.1~-2.2·무음 확률 0.44~0.6
+MIN_LOGPROB = -1.0   # 이보다 낮으면 버린다
+NO_SPEECH = 0.5      # 무음 확률이 이보다 높으면
+NO_SPEECH_LOGPROB = -0.6   # 로그확률 기준을 이만큼 엄하게
 
 
 def out(obj):
@@ -45,7 +48,8 @@ for line in sys.stdin:
             condition_on_previous_text=False, without_timestamps=True, hotwords=hotwords,
         )
         text = ' '.join(s.text.strip() for s in segments
-                        if not (s.no_speech_prob > NO_SPEECH and s.avg_logprob < MIN_LOGPROB)).strip()
+                        if s.avg_logprob >= MIN_LOGPROB
+                        and not (s.no_speech_prob > NO_SPEECH and s.avg_logprob < NO_SPEECH_LOGPROB)).strip()
         out({'id': req['id'], 'text': text, 'ms': round((time.perf_counter() - t0) * 1000)})
     except Exception as e:
         out({'id': req.get('id') if isinstance(req, dict) else None, 'error': str(e)})
