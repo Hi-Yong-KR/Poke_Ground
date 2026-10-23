@@ -13,6 +13,17 @@
 - **필요한 것**: Windows 10(1809 이상)/11 64비트, 첫 실행 때 인터넷(모두 합쳐 약 0.8GB).
 - 음성인식 엔진이 쓰는 **Microsoft Visual C++ 런타임**이 PC에 없으면 Microsoft 공식 설치 파일을 받아(서명 확인) 설치합니다. 이때 **관리자 확인 창이 한 번** 뜹니다. "아니요"를 누르면 예비용 음성인식(Vosk)으로 대신합니다.
 
+### 인터넷 없는 PC에 배포 (오프라인 배포판)
+
+인터넷이 되는 PC에서 한 번 만들어 두면, 받는 PC는 **압축만 풀고 `start.bat`** 으로 바로 실행합니다. 인터넷·Node.js·파이썬·관리자 권한 모두 필요 없습니다.
+
+```bash
+npm run make-offline
+```
+
+- 결과: `dist\PokeAction-offline.zip` (약 0.7GB, 풀면 1.1GB) — Electron 본체, 휴대용 파이썬 + faster-whisper, Visual C++ 런타임 DLL, Whisper 모델, 스프라이트가 들어 있습니다.
+- 울음소리(게임 원음)는 저작권 때문에 기본으로 빠집니다. 넣으려면 `powershell -File scripts\make-offline.ps1 -IncludeCries` (개인·비상업적 용도로만).
+
 ```bash
 npm install
 npm run setup
@@ -93,7 +104,7 @@ src/main/scanner.ps1   화면 객체 스캐너(상주 PowerShell) ─ scanner.cs
 src/shared/parser.mjs  명령 해석(한글 자모 퍼지매칭으로 오타/오인식 보정), 대상 찾기
 src/shared/data.mjs    포켓몬·기술·행동·리액션 정의
 src/renderer/          포켓몬 애니메이션(pokemon.mjs), 기술 이펙트(fx.mjs), 음성(speech.mjs), 앱(app.mjs)
-scripts/               에셋 다운로드, 음성인식 설치(setup-whisper.ps1 → 파이썬 찾기/받기, setup-whisper.py → 설치)
+scripts/               첫 실행 준비(setup.ps1), 음성인식 설치(setup-whisper.ps1/.py), 오프라인 배포판(make-offline.ps1), 에셋 다운로드
 test/                  명령 해석 테스트 (npm test)
 ```
 

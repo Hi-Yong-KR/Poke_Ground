@@ -11,6 +11,7 @@ npm install                 # electron, vosk-browser
 npm run setup               # fetch-assets(스프라이트·초상화·울음소리) + fetch-whisper(.venv에 faster-whisper 설치 + small 모델 480MB; 파이썬이 없으면 uv로 .python에 받음)
 npm run fetch-voice         # 예비용 Vosk 한국어 모델 87MB (Whisper를 못 쓸 때만 필요)
 npm start                   # 앱 실행
+npm run make-offline        # 오프라인 배포판 dist/PokeAction-offline.zip (받는 PC는 인터넷 불필요)
 start.bat                   # 배포용 진입점: 준비가 다 됐으면 바로 실행, 아니면 scripts/setup.ps1(Node 없으면 .node에 받기 → npm install → 에셋 → Whisper)
 npm test                    # node --test test/parser.test.mjs
 node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스트 하나만
@@ -48,6 +49,7 @@ node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스�
 - **Whisper 환각 필터**(`whisper_worker.py`의 `MIN_LOGPROB` 등): 힌트 단어를 주면 소음에서 "피카츄"/"크롬"을 지어낸다(로그확률 -1.1~-2.2). 명령은 -0.5 이상. 기준을 풀면 소음이 이름 부르기 명령으로 통과하니 주의.
 - **음성 필터 기준값**(`VOICE_MIN_CONF` 등)은 TTS로 만든 명령/잡담 샘플을 실제 엔진에 넣어 측정해 정했다. 바꿀 때는 test의 "실제로 측정된 잡담 오인식" 케이스가 계속 거부되는지 확인.
 - **파이썬**: `setup-whisper.ps1`이 `.venv` → 시스템 `python` → `py -3` 순으로 3.9+를 찾고, 없으면 uv(버전·SHA256 고정)로 `.python`에 3.12를 받아 `setup-whisper.py`를 실행한다(`-Private`로 그 경로 강제 테스트). WindowsApps의 가짜 python.exe는 실행해 봐서 걸러낸다. 시스템 파이썬은 설치 스크립트 실행에만 쓰고, 워커는 항상 `.venv\Scripts\python.exe -I`로 돈다. 워커 출력은 `json.dumps` 기본(ASCII 이스케이프)이라 콘솔 코드페이지(cp949)와 무관하다.
+- **오프라인 배포판**(`make-offline.ps1`): venv는 base 파이썬의 절대 경로에 묶여 옮길 수 없어서, uv의 휴대용 파이썬(`setup-whisper.ps1 -Private -PythonOnly`)을 `runtime\python`에 복사하고 거기에 직접 pip 설치한다(uv가 붙인 `EXTERNALLY-MANAGED` 삭제). VC++ DLL은 python.exe 옆에 app-local로 둔다. `whisper.js`는 `runtime\python\python.exe`가 있으면 그것을, 없으면 `.venv`를 쓴다. Electron 실행에 Node는 필요 없어 넣지 않는다. 울음소리는 `-IncludeCries` 때만.
 - **Visual C++ 런타임**: ctranslate2·onnxruntime이 `msvcp140.dll`/`msvcp140_1.dll`을 쓰는데 휠에 들어 있지 않다(새 Windows엔 없을 수 있음). `setup.ps1`이 System32에 없으면 `aka.ms/vs/17/release/vc_redist.x64.exe`를 받아 Authenticode 서명(Microsoft Corporation)을 확인하고 UAC로 설치, 끝나면 `.venv` 파이썬으로 `import faster_whisper`를 실제로 해 봐서 실패하면 Vosk를 받는다. 출처가 불분명한 PyPI `msvc-runtime` 패키지는 일부러 쓰지 않았다.
 - **start.bat**: cmd는 UTF-8 한글을 cp949로 읽어 줄이 깨질 수 있으므로 ASCII만 쓰고, CRLF여야 `goto`가 동작한다(.gitattributes로 고정). 한글 안내 문구는 `setup.ps1`(UTF-8 BOM)에서 낸다. `-PrivateNode`로 개인 Node 경로를 강제 테스트할 수 있다.
 - **저장소에 넣지 않는 것**(.gitignore): `node_modules/`, `.node/`, `.python/`, `.venv/`, `assets/models/`(Whisper·Vosk), `assets/pokemon/*/cry.ogg`(게임 원음, 저작권). 스프라이트·초상화는 CC BY-NC 4.0이라 `CREDITS.txt`와 함께 커밋한다.

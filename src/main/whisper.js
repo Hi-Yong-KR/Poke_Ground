@@ -10,7 +10,9 @@ const SAMPLE_RATE = 16000;
 
 class Whisper {
   constructor(root) {
-    this.python = path.join(root, '.venv', 'Scripts', 'python.exe');
+    // 오프라인 배포판(make-offline.ps1)은 휴대용 파이썬을 runtime\python 에 넣어 둔다
+    const bundled = path.join(root, 'runtime', 'python', 'python.exe');
+    this.python = fs.existsSync(bundled) ? bundled : path.join(root, '.venv', 'Scripts', 'python.exe');
     this.modelDir = path.join(root, 'assets', 'models', 'whisper-small');
     this.script = path.join(__dirname, 'whisper_worker.py');
     this.proc = null;

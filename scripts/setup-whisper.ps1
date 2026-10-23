@@ -1,8 +1,9 @@
 ﻿# 음성인식(Faster-Whisper) 설치 진입점: 쓸 수 있는 파이썬을 찾아 setup-whisper.py 를 실행한다.
 # 파이썬이 없으면 uv로 이 폴더의 .python 안에만 파이썬을 받아 쓴다 (관리자 권한 필요 없음, 시스템은 그대로).
 # 사용법: npm run fetch-whisper   (-Private: 시스템 파이썬이 있어도 개인 파이썬을 쓴다)
+#         -PythonOnly: 개인 파이썬만 준비하고 python.exe 경로를 마지막 줄에 출력 (make-offline.ps1용)
 # ※ PowerShell 5.1이 한글을 읽으려면 이 파일은 UTF-8 BOM이어야 한다.
-param([switch]$Private)
+param([switch]$Private, [switch]$PythonOnly)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'   # 5.1의 진행 표시줄은 다운로드를 크게 느리게 한다
 
@@ -44,6 +45,8 @@ function Get-PrivatePython {
   if ($LASTEXITCODE -ne 0 -or -not $py) { throw '설치한 파이썬을 찾지 못했어요' }
   return $py.Trim()
 }
+
+if ($PythonOnly) { Get-PrivatePython; exit 0 }
 
 $venvPy = Join-Path $Root '.venv\Scripts\python.exe'
 if (Test-Python $venvPy) { $py = $venvPy; $pre = @() }   # 이미 설치돼 있으면 그대로 사용

@@ -10,6 +10,7 @@
     "fetch-voice": "node scripts/fetch-voice-model.mjs",
     "fetch-whisper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-whisper.ps1",
     "setup": "node scripts/fetch-assets.mjs && npm run fetch-whisper",
+    "make-offline": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-offline.ps1",
     "test": "node --test test/parser.test.mjs"
   },
   "dependencies": {
