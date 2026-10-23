@@ -1,4 +1,4 @@
-# 포켓몬 액션 (PokeAction)
+# 포켓몬 그라운드 (PokeGround)
 
 바탕화면 위를 포켓몬이 자유롭게 돌아다니는 Windows 데스크탑 앱입니다.
 클릭·드래그·쓰다듬기로 놀아주고, **음성 또는 텍스트**로 "피카츄 크롬 10만볼트!"처럼 명령하면
@@ -6,7 +6,7 @@
 
 ## 내려받아 바로 쓰기
 
-[Releases](https://github.com/Hi-Yong-KR/Poke_Action/releases/latest)에서 **PokeAction-offline.zip** 을 받아 압축을 풀고, `PokeAction\start.bat`을 더블클릭하면 끝입니다. 인터넷·설치·관리자 권한 모두 필요 없어요. 처음 실행할 때 "Windows의 PC 보호" 창이 뜨면 [추가 정보] → [실행]을 누르세요.
+[Releases](https://github.com/Hi-Yong-KR/Poke_Ground/releases/latest)에서 **PokeGround-offline.zip** 을 받아 압축을 풀고, `PokeGround\start.bat`을 더블클릭하면 끝입니다. 인터넷·설치·관리자 권한 모두 필요 없어요. 처음 실행할 때 "Windows의 PC 보호" 창이 뜨면 [추가 정보] → [실행]을 누르세요.
 
 ## 소스에서 실행
 
@@ -25,7 +25,7 @@
 npm run make-offline
 ```
 
-- 결과: `dist\PokeAction-offline.zip` (약 0.7GB, 풀면 1.1GB) — Electron 본체, 휴대용 파이썬 + faster-whisper, Visual C++ 런타임 DLL, Whisper 모델, 스프라이트가 들어 있습니다.
+- 결과: `dist\PokeGround-offline.zip` (약 0.7GB, 풀면 1.1GB) — Electron 본체, 휴대용 파이썬 + faster-whisper, Visual C++ 런타임 DLL, Whisper 모델, 스프라이트가 들어 있습니다.
 - 울음소리(게임 원음)는 저작권 때문에 기본으로 빠집니다. 넣으려면 `powershell -File scripts\make-offline.ps1 -IncludeCries` (개인·비상업적 용도로만).
 
 ```bash

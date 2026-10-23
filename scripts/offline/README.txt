@@ -1,4 +1,4 @@
-﻿포켓몬 액션 (PokeAction) - 오프라인 배포판
+﻿포켓몬 그라운드 (PokeGround) - 오프라인 배포판
 
 [실행]
   1. 받은 zip 파일의 압축을 풉니다. (zip 안에서 바로 실행하면 안 돼요)
@@ -17,7 +17,7 @@
   Windows 10(1809 이상) 또는 11, 64비트 / 메모리 4GB 이상 권장 / 디스크 약 1.2GB
 
 [지우기]
-  트레이 메뉴에서 종료한 뒤 폴더를 지우면 됩니다. (설정은 %APPDATA%\poke-action 에 남아요)
+  트레이 메뉴에서 종료한 뒤 폴더를 지우면 됩니다. (설정은 %APPDATA%\poke-ground 에 남아요)
 
 [출처와 라이선스]
   스프라이트: PMD SpriteCollab (CC BY-NC 4.0) - 제작자는 app\assets\pokemon\(포켓몬)\CREDITS.txt

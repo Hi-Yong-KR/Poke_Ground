@@ -11,7 +11,7 @@ npm install                 # electron, vosk-browser
 npm run setup               # fetch-assets(스프라이트·초상화·울음소리) + fetch-whisper(.venv에 faster-whisper 설치 + small 모델 480MB; 파이썬이 없으면 uv로 .python에 받음)
 npm run fetch-voice         # 예비용 Vosk 한국어 모델 87MB (Whisper를 못 쓸 때만 필요)
 npm start                   # 앱 실행
-npm run make-offline        # 오프라인 배포판 dist/PokeAction-offline.zip (받는 PC는 인터넷 불필요)
+npm run make-offline        # 오프라인 배포판 dist/PokeGround-offline.zip (받는 PC는 인터넷 불필요)
 start.bat                   # 배포용 진입점: 준비가 다 됐으면 바로 실행, 아니면 scripts/setup.ps1(Node 없으면 .node에 받기 → npm install → 에셋 → Whisper)
 npm test                    # node --test test/parser.test.mjs
 node --test --test-name-pattern="음성 필터" test/parser.test.mjs   # 테스트 하나만

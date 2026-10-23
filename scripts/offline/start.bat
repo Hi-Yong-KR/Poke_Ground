@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-rem 포켓몬 액션 오프라인 배포판 실행기 (make-offline.ps1이 zip 맨 위에 넣는다)
+rem 포켓몬 그라운드 오프라인 배포판 실행기 (make-offline.ps1이 zip 맨 위에 넣는다)
 if not exist "app\node_modules\electron\dist\electron.exe" (
   echo.
-  echo  [포켓몬 액션] 실행 파일을 찾지 못했어요.
+  echo  [포켓몬 그라운드] 실행 파일을 찾지 못했어요.
   echo  zip 파일 안에서 바로 실행하지 말고, 먼저 압축을 푼 다음
   echo  풀린 폴더의 start.bat 을 실행해 주세요.
   echo.

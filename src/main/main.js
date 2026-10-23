@@ -18,7 +18,11 @@ let config = { party: ['pikachu', 'charizard', 'squirtle'], voice: true, sound: 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
 function loadConfig() {
-  try { config = { ...config, ...JSON.parse(fs.readFileSync(configPath(), 'utf8')) }; } catch { /* 첫 실행 */ }
+  // 이름이 poke-action일 때 저장한 설정은 새 폴더에 설정이 없을 때 한 번 가져온다
+  const legacy = path.join(app.getPath('appData'), 'poke-action', 'config.json');
+  const file = fs.existsSync(configPath()) || !fs.existsSync(legacy) ? configPath() : legacy;
+  try { config = { ...config, ...JSON.parse(fs.readFileSync(file, 'utf8')) }; } catch { /* 첫 실행 */ }
+  if (file === legacy) saveConfig();
 }
 function saveConfig() {
   fs.mkdirSync(path.dirname(configPath()), { recursive: true });
@@ -177,7 +181,7 @@ function menuTemplate() {
     { label: '모두 불러오기', click: () => send('summon') },
     { label: '개발자 도구', click: () => win.webContents.openDevTools({ mode: 'detach' }) },
     { type: 'separator' },
-    { label: '포켓몬 액션 종료', click: () => app.quit() },
+    { label: '포켓몬 그라운드 종료', click: () => app.quit() },
   ];
 }
 
@@ -187,7 +191,7 @@ async function createWindow() {
   win = new BrowserWindow({
     x: workArea.x, y: workArea.y, width: workArea.width, height: workArea.height,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
-    skipTaskbar: true, alwaysOnTop: true, show: false, title: 'PokeAction',
+    skipTaskbar: true, alwaysOnTop: true, show: false, title: 'PokeGround',
     backgroundColor: '#00000000',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' },
   });
@@ -206,7 +210,7 @@ async function createWindow() {
 
   const icon = nativeImage.createFromPath(path.join(ROOT, 'assets', 'pokemon', 'pikachu', 'portrait', 'Happy.png')).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('포켓몬 액션');
+  tray.setToolTip('포켓몬 그라운드');
   tray.on('click', () => { win.focus(); send('toggle-bar', true); });
   buildTrayMenu();
 

@@ -1,5 +1,5 @@
 ﻿{
-  "name": "poke-action",
+  "name": "poke-ground",
   "version": "1.0.0",
   "description": "바탕화면을 돌아다니는 포켓몬 키우기 데스크탑 앱",
   "main": "src/main/main.js",

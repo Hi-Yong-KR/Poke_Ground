@@ -1,6 +1,6 @@
 ﻿# 오프라인 배포판 만들기: 인터넷이 되는 이 PC에서 실행하면, 받는 PC에서 아무것도 내려받지 않고
-# 압축만 풀어 start.bat으로 실행되는 dist\PokeAction-offline.zip 을 만든다.
-# 풀면 PokeAction\ 안에 start.bat, README.txt(scripts\offline\ 에서 복사)와 app\ 폴더만 보인다.
+# 압축만 풀어 start.bat으로 실행되는 dist\PokeGround-offline.zip 을 만든다.
+# 풀면 PokeGround\ 안에 start.bat, README.txt(scripts\offline\ 에서 복사)와 app\ 폴더만 보인다.
 #   - Electron 본체 (실행에 Node.js는 필요 없다)
 #   - 휴대용 파이썬 + faster-whisper (venv는 다른 PC로 옮길 수 없어서 파이썬 자체에 설치)
 #   - Visual C++ 런타임 DLL을 python.exe 옆에 둔다 (app-local 배포: 설치·관리자 권한 불필요)
@@ -14,9 +14,9 @@ $ProgressPreference = 'SilentlyContinue'
 
 $Root = Split-Path -Parent $PSScriptRoot
 $Dist = Join-Path $Root 'dist'
-$Stage = Join-Path $Dist 'PokeAction'
+$Stage = Join-Path $Dist 'PokeGround'
 $App = Join-Path $Stage 'app'   # 앱 본체 (start.bat이 Electron으로 여는 폴더)
-$Zip = Join-Path $Dist 'PokeAction-offline.zip'
+$Zip = Join-Path $Dist 'PokeGround-offline.zip'
 $VcDlls = 'msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll'   # ctranslate2·onnxruntime이 쓰는 것
 
 function Step([string]$msg) { Write-Host "== $msg" -ForegroundColor Cyan }
@@ -85,9 +85,9 @@ Get-ChildItem -LiteralPath $App -Recurse -Directory -Filter '__pycache__' | Remo
 
 Step '압축 (zip)'
 # Windows 내장 bsdtar (PATH에 Git의 GNU tar가 먼저 있으면 E: 를 원격 호스트로 읽는다)
-& (Join-Path $env:SystemRoot 'System32\tar.exe') -a -c -f $Zip -C $Dist 'PokeAction'
+& (Join-Path $env:SystemRoot 'System32\tar.exe') -a -c -f $Zip -C $Dist 'PokeGround'
 if ($LASTEXITCODE -ne 0) { throw '압축 실패' }
 $mb = [math]::Round((Get-Item $Zip).Length / 1MB)
 Write-Host ''
 Write-Host "완료: $Zip ($mb MB)" -ForegroundColor Green
-Write-Host '받는 PC에서는 압축을 풀고 PokeAction\start.bat 을 실행하면 됩니다 (인터넷 불필요).'
+Write-Host '받는 PC에서는 압축을 풀고 PokeGround\start.bat 을 실행하면 됩니다 (인터넷 불필요).'
