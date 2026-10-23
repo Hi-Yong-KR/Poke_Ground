@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCommand, resolveTarget, acceptVoice } from '../src/shared/parser.mjs';
+import { parseCommand, resolveTarget, acceptVoice, acceptTranscript, voiceKeywords } from '../src/shared/parser.mjs';
 import { POKEMON, MOVES, ACTIONS, ATTACK_WORDS } from '../src/shared/data.mjs';
 
 test('데이터: 별칭이 서로 겹치지 않고, 포켓몬 기술은 모두 정의돼 있음', () => {
@@ -70,6 +70,32 @@ test('음성 필터: 실제로 측정된 잡담 오인식은 거부', () => {
   ]) assert.equal(acceptVoice('', w(s)).ok, false, s);
   assert.equal(acceptVoice('', w('이브이:1 휴지통:1 폼:0.86 귀여워:0.78')).ok, false);   // 지시 2개 섞임
   assert.equal(acceptVoice('', w('피카츄:0.5 점프:1')).ok, false);
+});
+
+test('받아쓰기 필터(Whisper): 조사·어미가 붙어도 명령은 통과', () => {
+  for (const s of ['피카츄 크롬 십만 볼트', '피카츄야 크롬 공격해', '꼬부기 물대포!', '모두 이리와', '피카츄']) {
+    assert.equal(acceptTranscript(s).ok, true, s);
+  }
+  const v = acceptTranscript('피카츄야 크롬 공격해');
+  assert.equal(parseCommand(v.text).attack, true);
+  assert.deepEqual(parseCommand(acceptTranscript('피카츄 크롬 십만 볼트').text).move, 'thunderbolt');
+});
+
+test('받아쓰기 필터(Whisper): 잡담은 거부', () => {
+  for (const s of [
+    '오늘 점심 뭐 먹을까',
+    '크롬 공격해 피카츄',
+    '피카츄 점프 춤춰',
+    '피카츄 진짜 귀엽다 그치 오늘 날씨도 좋고',
+    '',
+  ]) assert.equal(acceptTranscript(s).ok, false, s);
+});
+
+test('Whisper 힌트 단어: 한글만, 100개 이하, 포켓몬 이름 포함', () => {
+  const k = voiceKeywords();
+  assert.ok(k.length > 0 && k.length <= 100);
+  assert.ok(k.every((w) => /^[가-힣]{2,20}$/.test(w)));
+  assert.ok(k.includes('피카츄') && k.includes('꼬부기'));
 });
 
 const objects = [

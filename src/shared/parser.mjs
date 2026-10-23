@@ -183,6 +183,37 @@ export function acceptVoice(text, words = null) {
   return { ok: true, text: cleaned };
 }
 
+/** Whisper 인식 힌트(hotwords): 포켓몬·기술 이름 등 대표 단어 하나씩 (한글만, 최대 100개) */
+export function voiceKeywords() {
+  const first = (list) => list.map(compact).find((a) => /^[가-힣]{2,20}$/.test(a));
+  return [
+    ...Object.values(POKEMON).map((p) => first(p.aliases)),
+    first(ALL_ALIASES), first(ATTACK_WORDS),
+    ...Object.values(MOVES).map((m) => first(m.aliases)),
+    ...Object.values(ACTIONS).map(first),
+  ].filter(Boolean).slice(0, 100);
+}
+
+/** 받아쓴 단어를 아는 명령 단어로 맞춘다: "피카츄야" → "피카츄", "공격해" → "공격" */
+function snapWord(w) {
+  const c = compact(w);
+  if (ENTRY_OF.has(c)) return c;
+  const s = stripParticle(c);
+  if (ENTRY_OF.has(s)) return s;
+  const e = ENTRIES.find((x) => x.alias.length >= 2 && c.startsWith(x.alias));   // 긴 별칭부터
+  return e ? e.alias : w;
+}
+
+/**
+ * 받아쓰기형 엔진(Whisper) 결과용 필터. 문법 제한·단어 신뢰도가 없으므로
+ * 단어를 명령 단어로 맞춘 뒤 acceptVoice와 같은 기준(포켓몬 이름으로 시작, 짧게, 할 일 1가지)으로 거른다.
+ */
+export function acceptTranscript(text) {
+  const words = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean)
+    .map((w) => ({ word: snapWord(w), conf: 1 }));
+  return acceptVoice(text, words);
+}
+
 /** 해석 결과와 화면 객체 목록으로 공격 대상을 고른다. objects: [{kind,name,process,cls,x,y,w,h,z}] */
 export function resolveTarget(parsed, objects) {
   const windows = objects.filter((o) => o.kind === 'window').sort((a, b) => a.z - b.z);

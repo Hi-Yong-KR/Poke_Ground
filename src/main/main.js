@@ -6,6 +6,7 @@ const http = require('node:http');
 const { spawn, execFile } = require('node:child_process');
 const readline = require('node:readline');
 const { pathToFileURL } = require('node:url');
+const { Whisper } = require('./whisper.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 let POKEMON = {};   // src/shared/data.mjs 에서 읽어 옴 (포켓몬 목록은 그곳 한 곳에서 관리)
@@ -129,6 +130,12 @@ ipcMain.on('mouse-through', (_e, ignore) => {
   if (ignore) win.setIgnoreMouseEvents(true, { forward: true });
   else win.setIgnoreMouseEvents(false);
 });
+// ---- 오프라인 음성인식 (Faster-Whisper small, CPU INT8 — 상주 파이썬 프로세스) ----
+const whisper = new Whisper(ROOT);
+ipcMain.handle('stt-info', () => ({ available: whisper.available }));
+ipcMain.on('stt-hotwords', (_e, list) => whisper.setHotwords(list));
+ipcMain.handle('stt-transcribe', (_e, pcm) => whisper.transcribe(pcm));
+
 ipcMain.handle('get-config', () => config);
 ipcMain.on('set-config', (_e, patch) => { config = { ...config, ...patch }; saveConfig(); buildTrayMenu(); });
 ipcMain.on('focus-window', () => { if (win) { win.focus(); } });
@@ -215,10 +222,12 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
     startScanner();
+    whisper.start();   // 모델을 미리 올려 두어 첫 명령이 느리지 않게
     createWindow();
   });
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();
+    whisper.stop();
     if (scanner) scanner.stdin.write('exit\n');
   });
 }

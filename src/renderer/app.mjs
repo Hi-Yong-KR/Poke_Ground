@@ -434,6 +434,7 @@ const voice = new Voice({
   },
   onPartial(t) { if (!pendingVoice) $('#partial').textContent = t ? `${t}…` : ''; },
   diagnose: () => poke.diagnoseMic(),
+  stt: poke.stt,
   onStatus(state, text, fix) {
     $('#mic-dot').className = state;
     $('#voice-status').textContent = text;
@@ -484,7 +485,7 @@ $('#dev-btn').addEventListener('click', () => {
   const box = $('#devices');
   box.hidden = !box.hidden;
   $('#dev-btn').classList.toggle('on', !box.hidden);
-  if (!box.hidden) refreshDevices();
+  if (!box.hidden) { refreshDevices(); refreshSttInfo(); }
 });
 $('#mic-sel').addEventListener('change', (e) => {
   const o = e.target.selectedOptions[0];
@@ -502,6 +503,14 @@ $('#spk-sel').addEventListener('change', (e) => {
   testCry();
 });
 $('#spk-test').addEventListener('click', testCry);
+
+// ---- 지금 쓰는 음성인식 엔진 표시 ----
+async function refreshSttInfo() {
+  const info = await poke.stt.info();
+  $('#stt-engine').textContent = voice.engine === 'whisper' ? 'Faster-Whisper small (오프라인, CPU INT8)'
+    : voice.engine === 'vosk' ? `Vosk 소형 모델${info.available ? '' : ' — npm run fetch-whisper 로 Whisper 설치하면 더 정확해요'}`
+      : '꺼짐';
+}
 
 // ---- 종료 / 메뉴 ----
 function quitApp() {

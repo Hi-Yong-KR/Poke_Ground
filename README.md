@@ -7,6 +7,7 @@
 ## 실행
 
 `start.bat`을 더블클릭하세요. 처음 실행할 때 필요한 것을 자동으로 설치하고 받아옵니다.
+[Node.js](https://nodejs.org)와 음성인식용 [Python](https://www.python.org) 3.9 이상이 설치돼 있어야 합니다.
 
 ```bash
 npm install
@@ -63,11 +64,14 @@ npm start
 
 ## 음성과 텍스트
 
-- 음성인식은 **인터넷 없이** 동작하는 Vosk 한국어 모델을 씁니다. 인식률을 높이려고 명령에 쓰는 단어(포켓몬·기술·대상 이름)로 인식 범위를 제한합니다.
+- 음성인식은 **인터넷 없이** 동작하는 **Faster-Whisper small** 모델을 씁니다. GPU 없이 CPU만 쓰고, 불러올 때 **INT8로 양자화**해서 메모리 약 0.5GB, 한 문장 인식에 1초 안팎이라 저사양 PC에서도 돌아갑니다(CPU 스레드는 최대 4개만 사용).
+  - 처음 한 번 `npm run fetch-whisper`(start.bat이 자동 실행)가 `.venv` 파이썬 가상환경에 faster-whisper를 설치하고 모델(약 480MB)을 받습니다.
+  - 말소리가 들리는 구간만 잘라서 인식하고, 포켓몬·기술 이름을 힌트로 줘서 그 단어로 더 잘 받아씁니다. "피카츄야", "공격해"처럼 붙은 말은 명령 단어로 맞춰 읽어요.
+  - Whisper를 못 쓰는 경우(파이썬 없음 등)엔 예비용 Vosk 소형 모델(`npm run fetch-voice`)로 대신합니다. 지금 쓰는 엔진은 `⚙ 장치`에서 보여요.
 - 주변 대화에 반응하지 않도록 음성 명령은 다음 조건을 모두 만족해야 실행됩니다. 걸러진 말은 로그에 `🎤 (명령 아님: 이유)`로 표시돼요.
   - **포켓몬 이름(또는 '모두')으로 시작** — "피카츄 크롬 공격" ⭕ / "크롬 공격해 피카츄" ❌
   - **짧게** (5단어 이하), **할 일은 한 가지** ("피카츄 점프 춤춰" ❌)
-  - 인식 신뢰도가 충분히 높을 것 (텍스트 명령에는 이런 제한이 없어요)
+  - (Vosk일 때) 인식 신뢰도가 충분히 높을 것 (텍스트 명령에는 이런 제한이 없어요)
 - 마이크가 없거나 모델이 없으면 자동으로 텍스트 전용으로 동작합니다.
 - **장치 선택**: 명령창의 `⚙ 장치`에서 입력(마이크)과 출력(울음소리 스피커)을 고를 수 있어요. 입력 음량 막대로 마이크가 소리를 받는지 바로 보이고, `테스트`로 울음소리를 들어볼 수 있어요. 고른 장치는 다음 실행 때도 기억하며, 그 장치가 빠지면 Windows 기본 장치로 대신 연결합니다.
 - **텍스트 우선**: 음성 결과는 0.9초 기다렸다 실행되며, 다음 경우 음성은 버리고 텍스트를 따릅니다.
@@ -79,11 +83,12 @@ npm start
 
 ```
 src/main/main.js       Electron 메인: 투명 오버레이 창, 트레이, 단축키, 로컬 서버
+src/main/whisper.js    음성인식 워커 관리 ─ whisper_worker.py: Faster-Whisper small(CPU INT8) 상주 프로세스
 src/main/scanner.ps1   화면 객체 스캐너(상주 PowerShell) ─ scanner.cs: 창 목록·바탕화면 아이콘 좌표
 src/shared/parser.mjs  명령 해석(한글 자모 퍼지매칭으로 오타/오인식 보정), 대상 찾기
 src/shared/data.mjs    포켓몬·기술·행동·리액션 정의
 src/renderer/          포켓몬 애니메이션(pokemon.mjs), 기술 이펙트(fx.mjs), 음성(speech.mjs), 앱(app.mjs)
-scripts/               에셋·음성 모델 다운로드
+scripts/               에셋 다운로드, 음성인식 설치(setup-whisper.py)
 test/                  명령 해석 테스트 (npm test)
 ```
 
@@ -93,5 +98,6 @@ test/                  명령 해석 테스트 (npm test)
 
 - 스프라이트·초상화: [PMD SpriteCollab](https://sprites.pmdcollab.org) — **CC BY-NC 4.0** (비상업적 사용, 출처 표기). 포켓몬별 제작자는 `assets/pokemon/*/CREDITS.txt`에 있습니다.
 - 울음소리: [PokeAPI/cries](https://github.com/PokeAPI/cries) (최신 게임 음원). 게임 원음이라 저장소에는 포함하지 않고 `npm run fetch-assets`로 받습니다. 트레이 메뉴 '울음소리'로 끌 수 있어요.
-- 음성 모델: [Vosk](https://alphacephei.com/vosk/models) `vosk-model-small-ko-0.22` — Apache 2.0
+- 음성 모델: [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) (OpenAI Whisper small의 CTranslate2 변환) — MIT, 엔진 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — MIT
+- 예비 음성 모델: [Vosk](https://alphacephei.com/vosk/models) `vosk-model-small-ko-0.22` — Apache 2.0
 - 포켓몬 캐릭터의 권리는 Nintendo / Creatures / GAME FREAK에 있습니다. 이 프로젝트는 **개인·비상업적 용도**로만 사용하세요.

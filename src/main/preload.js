@@ -11,5 +11,10 @@ contextBridge.exposeInMainWorld('poke', {
   quit: () => ipcRenderer.send('quit'),
   focus: () => ipcRenderer.send('focus-window'),
   blur: () => ipcRenderer.send('blur-window'),
-  onEvent: (cb) => ipcRenderer.on('event', (_e, msg) => cb(msg)),
+  stt: {
+    info: () => ipcRenderer.invoke('stt-info'),
+    hotwords: (list) => ipcRenderer.send('stt-hotwords', list),
+    transcribe: (pcm) => ipcRenderer.invoke('stt-transcribe', pcm),
+  },
+  onEvent:(cb) => ipcRenderer.on('event', (_e, msg) => cb(msg)),
 });
