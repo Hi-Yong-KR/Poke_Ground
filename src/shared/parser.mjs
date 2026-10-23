@@ -9,7 +9,8 @@ function buildEntries() {
   const e = [];
   for (const [id, p] of Object.entries(POKEMON)) for (const a of p.aliases) e.push({ kind: 'pokemon', id, alias: a });
   for (const a of ALL_ALIASES) e.push({ kind: 'all', id: 'all', alias: a });
-  for (const [id, m] of Object.entries(MOVES)) for (const a of m.aliases) e.push({ kind: 'move', id, alias: a });
+  // auto: 공식 기술 전부를 넣으며 자동으로 만든 기술 (moves.mjs). 이름이 짧고 흔해서 아래처럼 덜 너그럽게 찾는다
+  for (const [id, m] of Object.entries(MOVES)) for (const a of m.aliases) e.push({ kind: 'move', id, alias: a, auto: !!m.auto });
   for (const a of ATTACK_WORDS) e.push({ kind: 'attack', id: 'attack', alias: a });
   for (const [id, list] of Object.entries(ACTIONS)) for (const a of list) e.push({ kind: 'action', id, alias: a });
   TARGET_ALIASES.forEach((t, i) => t.keys.forEach((a) => e.push({ kind: 'target', id: i, alias: a })));
@@ -23,8 +24,8 @@ let ENTRIES, FUZZY_ENTRIES, ENTRY_OF;
 /** 포켓몬 목록이 바뀌면(사용자가 추가·삭제) 별칭 표를 다시 만든다 */
 export function refreshEntries() {
   ENTRIES = buildEntries();
-  // 퍼지 매칭에 쓸 항목: 너무 짧으면 오탐이 많아 2글자 이상만
-  FUZZY_ENTRIES = ENTRIES.filter((x) => x.alias.length >= 2 && /[가-힣]/.test(x.alias)
+  // 퍼지 매칭에 쓸 항목: 너무 짧으면 오탐이 많아 2글자 이상만. 자동 기술 700여 개는 빼서 창 이름 같은 말이 기술로 바뀌지 않게
+  FUZZY_ENTRIES = ENTRIES.filter((x) => x.alias.length >= 2 && /[가-힣]/.test(x.alias) && !x.auto
     && ['pokemon', 'move', 'target', 'action', 'attack'].includes(x.kind));
   ENTRY_OF = new Map(ENTRIES.map((e) => [e.alias, e]));
 }
@@ -65,6 +66,7 @@ export function parseCommand(text) {
   // 2단계: 붙여 쓴 말 속에서 긴 별칭부터 찾기
   for (const entry of ENTRIES) {
     const a = entry.alias;
+    if (entry.auto && a.length <= 2) continue;   // 짧은 자동 기술('물기', '지진')은 1단계처럼 띄어 쓴 단어일 때만
     if (a.length === 1) {
       // 한 글자 별칭('자', '물', '와'...)은 독립된 단어(조사 허용)일 때만 인정
       tokens.forEach((t, i) => {
@@ -147,7 +149,8 @@ export function parseCommand(text) {
 /** 음성인식 문법: 명령에 쓰이는 단어만 인식하도록 후보를 제한한다 (extra: 화면에 보이는 창/아이콘 이름 등) */
 export function voiceGrammar(extra = []) {
   const words = new Set();
-  for (const e of ENTRIES) if (/^[가-힣0-9 ]+$/.test(e.alias)) words.add(e.alias);
+  // 자동 기술은 넣지 않는다: 단어가 수백 개 늘면 잡담이 명령으로 끼워 맞춰지기 쉽고, 필터 기준값은 넣기 전에 잰 것이다
+  for (const e of ENTRIES) if (!e.auto && /^[가-힣0-9 ]+$/.test(e.alias)) words.add(e.alias);
   for (const w of extra) if (/^[가-힣]{2,}$/.test(w)) words.add(w);
   return [...words, '[unk]'];
 }
@@ -201,7 +204,7 @@ export function voiceKeywords() {
   return [
     ...Object.values(POKEMON).map((p) => first(p.aliases)).filter(Boolean).slice(0, 40),
     first(ALL_ALIASES), first(ATTACK_WORDS),
-    ...Object.values(MOVES).map((m) => first(m.aliases)),
+    ...Object.values(MOVES).filter((m) => !m.auto).map((m) => first(m.aliases)),   // 손으로 다듬은 기술만 (100개 한도)
     ...Object.values(ACTIONS).map(first),
   ].filter(Boolean).slice(0, 100);
 }
@@ -212,10 +215,10 @@ function snapWord(w) {
   if (ENTRY_OF.has(c)) return c;
   const s = stripParticle(c);
   if (ENTRY_OF.has(s)) return s;
-  const e = ENTRIES.find((x) => x.alias.length >= 2 && c.startsWith(x.alias));   // 긴 별칭부터
+  const e = ENTRIES.find((x) => x.alias.length >= (x.auto ? 3 : 2) && c.startsWith(x.alias));   // 긴 별칭부터
   if (e) return e.alias;
   // 붙여 받아쓴 말 속의 할 일 ("그롬싱만볼트" → "만볼트"). 대상 이름은 parseCommand가 퍼지로 찾는다
-  const inner = ENTRIES.find((x) => x.alias.length >= 2 && INTENT_KINDS.has(x.kind) && c.includes(x.alias));
+  const inner = ENTRIES.find((x) => x.alias.length >= 2 && !x.auto && INTENT_KINDS.has(x.kind) && c.includes(x.alias));
   return inner ? inner.alias : w;
 }
 const INTENT_KINDS = new Set(['move', 'attack', 'action']);

@@ -7,6 +7,7 @@ const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", sans-serif';
 const TYPE_EMOJI = {
   electric: '⚡', fire: '🔥', water: '💧', grass: '🍃', normal: '⭐',
   ice: '❄️', fairy: '✨', dark: '🌙', psychic: '🔮', fighting: '👊',
+  poison: '☠️', ground: '⛰️', bug: '🐛', ghost: '👻', rock: '🪨', steel: '⚙️', dragon: '🐉', flying: '🪶',
 };
 const TYPE_COLORS = {
   electric: ['#fff7a1', '#ffe23d', '#ffd000'],
@@ -23,6 +24,10 @@ const TYPE_COLORS = {
   psychic: ['#ffd6f0', '#ff8ad0', '#d65cff', '#ff5ca8'],
   fighting: ['#fff3c4', '#ffb35c', '#e85c2a', '#7fc8ff'],
   rock: ['#e8d8b0', '#c9a86a', '#8d7348'],
+  poison: ['#f0c8ff', '#c070e0', '#9a48c8', '#6a2c90'],
+  ground: ['#f5e2b0', '#d8b060', '#a8813a', '#7a5a2a'],
+  bug: ['#eaffb0', '#b8d840', '#88a820', '#5f7a14'],
+  ghost: ['#d8c8ff', '#9a80d8', '#5a4596', '#33285e'],
 };
 
 // 파티클 수 상한: 980마리가 저마다 감정 표현을 하면 수천 개가 쌓여 화면이 초당 몇 프레임으로 떨어진다(측정)
@@ -264,9 +269,14 @@ function aftermath(fx, type, r, to) {
         if (i < 8) fx.spawn({ ...p, shape: 'ring', color: pick(cols), size: 4, grow: 90, life: 0.6, t: -rand(0, 0.7) });
         break;
       case 'dark':   // 어두운 연기가 피어오름
+      case 'ghost':
         fx.spawn({ ...p, vy: rand(-60, -20), vx: rand(-15, 15), size: rand(10, 18), grow: 16, color: pick(cols), life: rand(0.9, 1.5), t: -rand(0, 0.6) });
         break;
+      case 'poison':   // 독 거품이 보글보글
+        fx.spawn({ ...p, shape: 'ring', vy: rand(-50, -15), color: pick(cols), size: rand(4, 9), grow: 8, life: rand(0.7, 1.2), t: -rand(0, 0.7) });
+        break;
       case 'rock':
+      case 'ground':
         fx.spawn({ ...p, vx: rand(-60, 60), vy: rand(-140, -40), ay: 700, size: rand(4, 8), color: pick(cols), life: 1, t: -rand(0, 0.3) });
         break;
       default:

@@ -42,7 +42,11 @@ npm start
 
 - 이름(`파이리`, `gengar`)이나 도감 번호(`94`, `#150`)로 찾을 수 있어요. **전부 들여보내기**를 누르면 화면의 포켓몬(검색 중이면 찾은 것만)이 모두 몬스터볼로 돌아가요.
 - 한 번 내보낸 포켓몬은 음성·텍스트 명령("파이리 크롬 화염방사", `님피아 나와`)으로도 부를 수 있어요.
-- 각자 타입에 맞는 기술 4~5개를 쓰고, 못 배우는 기술을 시키면 거절해요. 기술 연출이 없는 타입(독·땅·벌레·고스트)은 비슷한 타입(악·바위·풀) 기술을 씁니다.
+- **기술은 공식 기술 833개가 모두 들어 있고, 포켓몬마다 실제로 배우는 기술만 써요**(모든 세대의 레벨업·기술머신·알·가르침을 합친 것). 배우지 않는 기술을 시키면 거절해요. 그냥 "공격"이라고 하면 배우는 기술 중 대표 기술 4~5개에서 골라 씁니다.
+  - 66개는 연출을 손으로 다듬었고, 나머지는 속성과 분류(몸이 닿는 물리 / 멀리 쏘는 기술 / 변화 기술)로 연출을 자동으로 골라요. 변화 기술(칼춤, 방어 등)은 자기에게 쓰는 모습으로 보여 줍니다.
+  - 포켓몬끼리 공격하면 18속성 상성으로 "효과는 굉장했다!", "효과가 없는 것 같다..."가 나와요.
+  - 이름이 두 글자인 기술(`지진`, `물기` 등)은 띄어 써야 알아들어요. 영어 이름(`thunderbolt`)도 됩니다.
+  - 음성 명령은 손으로 다듬은 66개 기술만 힌트로 줘요. 나머지 기술도 받아쓰기가 정확하면 통하지만, 흔하지 않은 이름은 텍스트로 쓰는 게 확실해요.
 - 배포판에 그림이 없는 포켓몬(만들 때 PMD SpriteCollab에 아직 그림이 없던 45종 등)은 **📖 도감**에서 이름이나 번호로 찾으면 ⬇ 표시로 나옵니다(찾을 때는 칸마다 도감 번호와 속성도 함께 보여요). 누르면 그때 그림을 받아 와서 내보내요(인터넷 필요). 받은 그림은 `%APPDATA%\poke-ground\dex`에 남아요.
 - **울음소리**: 처음 실행할 때 인터넷이 되면 전국도감 1025종의 울음소리(약 17MB)를 한 번 받아 `%APPDATA%\poke-ground\cries`에 둡니다. 명령창에 "울음소리를 받는 중" → "받았어요"가 표시돼요. 인터넷이 없으면 다음 실행 때 다시 받아요.
 
@@ -77,6 +81,7 @@ npm start
 | `잘했어` / `귀여워` / `안돼` / `안녕` / `놀자` / `멈춰` / `달려` | 칭찬·꾸중·인사 등 |
 | `이브이 나와` / `피카츄 들어가` / `모두 들어가` | 몬스터볼에서 꺼내기 / 넣기 |
 | `글레이시아 크롬 냉동빔` / `에브이 탐색기 사이코키네시스` / `블래키 휴지통 악의파동` | 얼음·에스퍼·악 등 새 타입 기술 |
+| `피카츄 크롬 볼트태클` / `팬텀 섀도볼` / `잠만보 휴지통 지진` | 그 포켓몬이 배우는 기술이면 무엇이든 |
 | `피카츄 불대문자` | 못 쓰는 기술이면 "불은 못 뿜는다고 억울한 표정을 짓는다" |
 | `리자몽 오늘 점심 뭐야` | 이해 못 하면 갸웃거리며 눈치를 봄 |
 
@@ -121,6 +126,7 @@ src/main/whisper.js    음성인식 워커 관리 ─ whisper_worker.py: Faster-
 src/main/scanner.ps1   화면 객체 스캐너(상주 PowerShell) ─ scanner.cs: 창 목록·바탕화면 아이콘 좌표
 src/shared/parser.mjs  명령 해석(한글 자모 퍼지매칭으로 오타/오인식 보정), 대상 찾기
 src/shared/data.mjs    포켓몬·기술·행동·리액션 정의 ─ dex.mjs: 도감에서 추가하는 포켓몬, pokedex.mjs: 전국도감 표(자동 생성)
+                       moves.mjs: 공식 기술 전부·배우는 기술, movedex.mjs·learnsets.mjs: 기술 표(자동 생성)
 src/renderer/          포켓몬 애니메이션(pokemon.mjs), 기술 이펙트(fx.mjs), 음성(speech.mjs), 앱(app.mjs)
 scripts/               첫 실행 준비(setup.ps1), 음성인식 설치(setup-whisper.ps1/.py), 오프라인 배포판(make-offline.ps1), 에셋 다운로드(fetch-assets, fetch-dex)
 test/                  명령 해석 테스트 (npm test)
@@ -131,7 +137,7 @@ test/                  명령 해석 테스트 (npm test)
 ## 에셋 출처와 라이선스
 
 - 스프라이트·초상화: [PMD SpriteCollab](https://sprites.pmdcollab.org) — **CC BY-NC 4.0** (비상업적 사용, 출처 표기). 포켓몬별 제작자는 `assets/pokemon/*/CREDITS.txt`, `assets/dex/*/CREDITS.txt`에 있습니다.
-- 전국도감 이름·타입: [PokeAPI](https://github.com/PokeAPI/pokeapi) 데이터 — BSD-3-Clause
+- 전국도감 이름·타입, 기술과 포켓몬별로 배우는 기술: [PokeAPI](https://github.com/PokeAPI/pokeapi) 데이터 — BSD-3-Clause
 - 울음소리: [PokeAPI/cries](https://github.com/PokeAPI/cries) (최신 게임 음원). 게임 원음이라 저장소·배포판에는 포함하지 않고 앱이 처음 실행될 때 받습니다(`src/main/cries.mjs`). 트레이 메뉴 '울음소리'로 끌 수 있어요.
 - 음성 모델: [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) (OpenAI Whisper small의 CTranslate2 변환) — MIT, 엔진 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — MIT
 - 예비 음성 모델: [Vosk](https://alphacephei.com/vosk/models) `vosk-model-small-ko-0.22` — Apache 2.0

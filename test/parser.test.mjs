@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCommand, resolveTarget, acceptVoice, acceptTranscript, voiceKeywords } from '../src/shared/parser.mjs';
+import { parseCommand, resolveTarget, acceptVoice, acceptTranscript, voiceKeywords, voiceGrammar } from '../src/shared/parser.mjs';
 import { POKEMON, MOVES, ACTIONS, ATTACK_WORDS } from '../src/shared/data.mjs';
 
 test('데이터: 별칭이 서로 겹치지 않고, 포켓몬 기술은 모두 정의돼 있음', () => {
@@ -169,6 +169,26 @@ test('음성 오인식 보정', () => {
   assert.deepEqual(p.pokemon, ['pikachu']);
   assert.equal(p.move, 'thunderbolt');
   assert.equal(parseCommand('꼬부지 물대포').pokemon[0], 'squirtle');
+});
+
+test('공식 기술 전부: 이름으로 부르고, 짧은 이름은 띄어 쓴 단어일 때만', () => {
+  assert.equal(parseCommand('피카츄 크롬 아이언테일').move, 'irontail');
+  assert.equal(parseCommand('리자몽 크롬 오버히트').move, 'overheat');
+  assert.equal(parseCommand('팬텀 섀도볼').move, 'shadowball');
+  assert.equal(parseCommand('잠만보 휴지통 지진').move, 'earthquake');
+  assert.equal(parseCommand('잠만보 휴지통 지진').targetKey, parseCommand('잠만보 휴지통 공격').targetKey);
+  assert.equal(parseCommand('피카츄 크롬 thunderbolt').move, 'thunderbolt');
+  assert.equal(parseCommand('피카츄 크롬 박치기').move, 'headbutt');
+  // 대상 이름 속의 짧은 기술 이름('독침' 등)을 기술로 잘라 먹지 않는다
+  const p = parseCommand('피카츄 독침맞은사과 공격');
+  assert.equal(p.move, null);
+  assert.ok(p.targetWords.includes('독침맞은사과'));
+});
+
+test('음성: 자동 기술은 Vosk 문법·Whisper 힌트에 넣지 않음', () => {
+  assert.ok(!voiceGrammar().includes('오버히트'));
+  assert.ok(voiceGrammar().includes('화염방사'));
+  assert.ok(!voiceKeywords().includes('오버히트'));
 });
 
 test('이해 못한 말', () => {

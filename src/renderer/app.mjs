@@ -3,7 +3,8 @@ import { FX } from './fx.mjs';
 import { Mon, loadSpecies, CRY_VOLUME } from './pokemon.mjs';
 import { Voice } from './speech.mjs';
 import { parseCommand, resolveTarget, aliasTaken } from '../shared/parser.mjs';
-import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, HIT_TEXT, SUPER, WEAK } from '../shared/data.mjs';
+import { POKEMON, MOVES, REACTIONS, CLICK_POOL, CANT_TEXT, NOT_LEARNED_TEXT, HIT_TEXT, effectiveness } from '../shared/data.mjs';
+import { learns } from '../shared/moves.mjs';
 import { DEX, TYPE_KO, applyCustom, searchDex, customKey, dexAssets, creationKey, creationTypes, builtinKeyOf } from '../shared/dex.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -323,6 +324,9 @@ async function doAttack(actors, p) {
   if (box) setTimeout(() => box.remove(), 600);
 }
 
+/** 포켓몬의 속성 전부: 도감·내 그림 포켓몬은 def.types, 기본 27마리는 도감 표에서 */
+const typesOf = (def) => def.types || DEX.get(def.dex)?.types || [def.type];
+
 function aimOf(m, target) {
   if (!target) {
     const a = (m.dir * Math.PI) / 4;
@@ -339,11 +343,18 @@ function attack(m, p, target, box) {
   let moveId = p.move;
   if (!moveId) {
     const usable = m.def.moves.filter((id) => !MOVES[id].self);
-    moveId = Math.random() < 0.6 ? m.def.signature : pick(usable);
+    moveId = Math.random() < 0.6 || !usable.length ? m.def.signature : pick(usable);
   }
   const mv = MOVES[moveId];
-  const can = m.def.moves.includes(moveId) || (m.def.moveTypes || [m.def.type]).includes(mv.type) || (mv.type === 'normal' && !mv.self);
-  if (!can) return m.react('cant', { text: `${mv.name}?! ${CANT_TEXT[mv.type] || CANT_TEXT.normal}` });
+  // 도감 포켓몬은 실제로 배우는 기술만, 직접 그림을 넣은 포켓몬은 속성이 맞는 기술과 노말 공격 기술을 쓴다
+  const learned = m.def.creation ? null : learns(m.def.dex, moveId);
+  const types = typesOf(m.def);
+  const can = m.def.moves.includes(moveId)
+    || (learned ?? ((m.def.moveTypes || types).includes(mv.type) || (mv.type === 'normal' && !mv.self)));
+  if (!can) {
+    const why = types.includes(mv.type) ? NOT_LEARNED_TEXT : CANT_TEXT[mv.type] || CANT_TEXT.normal;
+    return m.react('cant', { text: `${mv.name}?! ${why}` });
+  }
 
   if (mv.self) {
     return m.run(async () => {
@@ -391,9 +402,11 @@ function onHit(attacker, mv, target, aim, box) {
   if (!target) return;
   let text = pick(HIT_TEXT);
   if (target.mon) {
-    const tt = target.mon.def.types || [target.mon.def.type];   // 속성이 여럿이면 하나라도 맞으면
-    if (tt.some((t) => (SUPER[mv.type] || []).includes(t))) text = '효과는 굉장했다!';
-    else if (tt.some((t) => (WEAK[mv.type] || []).includes(t))) text = '효과가 별로인 듯하다...';
+    const k = effectiveness(mv.type, typesOf(target.mon.def));   // 속성이 여럿이면 배율을 곱한다
+    if (k === 0) text = '효과가 없는 것 같다...';
+    else if (k >= 2) text = '효과는 굉장했다!';
+    else if (k < 1) text = '효과가 별로인 듯하다...';
+    else text = pick(['명중!', '급소에 맞았다!']);   // 보통(1배)일 때 상성 문구가 나오지 않게
     target.mon.react('hurt', { text: `${attacker.name}의 ${mv.name}에 맞았다! 억울한 눈빛으로 쳐다본다` });
   }
   const el = document.createElement('div');

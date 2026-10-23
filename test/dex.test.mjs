@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEX, makeMon, applyCustom, searchDex, customKey, creationKey, builtinKeyOf } from '../src/shared/dex.mjs';
 import { parseCommand, acceptTranscript } from '../src/shared/parser.mjs';
-import { POKEMON, MOVES, CANT_TEXT } from '../src/shared/data.mjs';
+import { POKEMON, MOVES, CANT_TEXT, effectiveness } from '../src/shared/data.mjs';
+import { learns, learnset } from '../src/shared/moves.mjs';
+import { MOVEDEX } from '../src/shared/movedex.mjs';
 
 const BUILTIN = Object.keys(POKEMON).length;
 
@@ -13,15 +15,43 @@ test('도감 표: 1025종, 이름과 타입이 모두 있음', () => {
   assert.equal(builtinKeyOf(25), 'pikachu');
 });
 
-test('추가 포켓몬 정의: 모든 종이 쓸 수 있는 기술·타입·별칭을 가짐', () => {
+test('추가 포켓몬 정의: 모든 종이 실제로 배우는 기술·타입·별칭을 가짐', () => {
   for (const dex of DEX.keys()) {
     if (builtinKeyOf(dex)) continue;
     const m = makeMon(dex);
-    assert.ok(m.moves.length >= 2 && m.moves.every((k) => MOVES[k]), `${dex} 기술`);
+    assert.ok(m.moves.length >= 1 && m.moves.every((k) => MOVES[k] && learns(dex, k)), `${dex} 기술`);
     assert.ok(CANT_TEXT[m.type], `${dex} 타입 ${m.type}`);
     assert.ok(m.aliases.length >= 1, `${dex} 별칭`);
   }
-  assert.equal(makeMon(94).type, 'dark');   // 팬텀(고스트/독) → 비슷한 악 타입 기술
+  assert.equal(makeMon(94).type, 'ghost');   // 팬텀(고스트/독): 고스트 기술도 이제 있다
+  assert.ok(makeMon(94).moves.some((k) => MOVES[k].type === 'ghost'));
+  assert.deepEqual(makeMon(132).moves, ['transform']);   // 메타몽은 변신만 배운다
+});
+
+test('기술 전부: 공식 기술이 모두 정의돼 있고, 포켓몬마다 배우는 기술을 앎', () => {
+  assert.ok(MOVEDEX.length > 800);
+  for (const [key] of MOVEDEX) {
+    const m = MOVES[key];
+    assert.ok(m && m.type && m.anims.length && (m.self ? m.selfText : m.fx), key);
+    assert.ok(CANT_TEXT[m.type], `${key} 타입 ${m.type}`);
+  }
+  assert.equal(MOVES.flamewheel.name, '화염바퀴');                    // 다듬은 기술도 공식 이름으로,
+  assert.ok(MOVES.flamewheel.aliases.includes('화염자동차'));         // 예전 이름은 별칭으로
+  assert.ok(MOVES.headbutt.aliases.includes('박치기') && !MOVES.tackle.aliases.includes('박치기'));
+  assert.equal(learns(25, 'thunderbolt'), true);
+  assert.equal(learns(25, 'flamethrower'), false);
+  assert.equal(learns(4, 'flamethrower'), true);
+  assert.equal(learns(9999, 'tackle'), null);
+  assert.deepEqual(learnset(132), ['transform']);
+  for (const dex of DEX.keys()) assert.ok(learnset(dex).length >= 1, dex);
+});
+
+test('상성: 18속성, 속성이 둘이면 배율을 곱함', () => {
+  assert.equal(effectiveness('electric', ['water', 'flying']), 4);
+  assert.equal(effectiveness('electric', ['ground']), 0);
+  assert.equal(effectiveness('fire', ['water']), 0.5);
+  assert.equal(effectiveness('ghost', ['normal']), 0);
+  assert.equal(effectiveness('normal', ['fire']), 1);
 });
 
 test('검색: 한글·영어·번호, 기본 포켓몬 표시', () => {

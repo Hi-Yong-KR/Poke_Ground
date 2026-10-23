@@ -1,5 +1,7 @@
 // 포켓몬·기술·행동·리액션 정의
 // 포켓몬 목록은 여기 한 곳에서 관리한다 (에셋 다운로드 스크립트·렌더러가 이 목록을 읽음). dex: 전국도감 번호
+import { compact } from './hangul.mjs';
+import { addAllMoves } from './moves.mjs';
 
 const mon = (dex, name, type, aliases, cries, moves, extra = {}) =>
   ({ dex, name, type, scale: 3, speed: 65, aliases, cries, moves, signature: moves[0], ...extra });
@@ -44,7 +46,7 @@ export const POKEMON = {
   jolteon: mon(135, '쥬피썬더', 'electric', ['쥬피썬더', '쥬피선더', '쥬피'], ['썬더!', '쥬피~!', '쥬피썬더!', '찌릿?'],
     ['thunderbolt', 'discharge', 'thundershock', 'quickattack', 'tackle'], { speed: 90 }),
   sylveon: mon(700, '님피아', 'fairy', ['님피아', '님피'], ['님피~♪', '님피아!', '피아~', '님피?'],
-    ['moonblast', 'dazzlinggleam', 'fairywind', 'drainkiss', 'quickattack']),
+    ['moonblast', 'dazzlinggleam', 'fairywind', 'drainingkiss', 'quickattack']),
   flareon: mon(136, '부스터', 'fire', ['부스터', '부스'], ['부스~!', '부스터!', '부스부스!', '후우...'],
     ['flamethrower', 'flamecharge', 'ember', 'fireblast', 'tackle']),
   glaceon: mon(471, '글레이시아', 'ice', ['글레이시아', '글레이시', '글레이'], ['글레이~', '시아!', '글레이시아~!', '시아?'],
@@ -85,7 +87,7 @@ export const POKEMON = {
   cyndaquil: mon(155, '브케인', 'fire', ['브케인', '브케'], ['브케!', '브케인~', '케인!', '브케?'],
     ['eruption', 'flamewheel', 'flamethrower', 'ember'], { speed: 60 }),
   alcremie: mon(869, '마휘핑', 'fairy', ['마휘핑', '마휘'], ['마휘~♪', '휘핑!', '마휘핑~', '휘?'],
-    ['dazzlinggleam', 'drainkiss', 'decorate', 'fairywind'], { speed: 50 }),
+    ['dazzlinggleam', 'drainingkiss', 'decorate', 'fairywind'], { speed: 50 }),
 };
 
 export const ALL_ALIASES = ['모두', '다들', '전부', '얘들아', '모두들', '다같이', '다'];
@@ -138,7 +140,7 @@ export const MOVES = {
   moonblast: { name: '문포스', type: 'fairy', fx: 'orb', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['문포스', '달의힘'] },
   dazzlinggleam: { name: '매지컬샤인', type: 'fairy', fx: 'beam', anims: ['Charge', 'Shoot', 'Attack'], aliases: ['매지컬샤인', '샤인'] },
   fairywind: { name: '요정의바람', type: 'fairy', fx: 'sparkle', anims: ['Shoot', 'Attack'], aliases: ['요정의바람', '요정바람'] },
-  drainkiss: { name: '드레인키스', type: 'fairy', fx: 'kiss', anims: ['Shoot', 'Attack', 'Hop'], aliases: ['드레인키스', '뽀뽀', '키스'] },
+  drainingkiss: { name: '드레인키스', type: 'fairy', fx: 'kiss', anims: ['Shoot', 'Attack', 'Hop'], aliases: ['드레인키스', '뽀뽀', '키스'] },
   disarmingvoice: { name: '차밍보이스', type: 'fairy', fx: 'ringwave', anims: ['Shoot', 'Attack'], aliases: ['차밍보이스'] },
   charm: { name: '애교부리기', type: 'fairy', self: true, selfText: '한껏 애교를 부린다. 귀여움으로 상대의 공격을 낮추려는 작전 같다', anims: ['Pose', 'Hop', 'Double'], aliases: ['애교부리기', '애교'] },
   decorate: { name: '데코레이션', type: 'fairy', self: true, selfText: '크림과 사탕으로 몸을 예쁘게 꾸민다. 칭찬받고 싶은 것 같다', anims: ['Pose', 'Rotate', 'Double'], aliases: ['데코레이션', '꾸미기'] },
@@ -298,18 +300,43 @@ export const CANT_TEXT = {
   psychic: '아무리 집중해도 초능력이 안 나와서 머쓱해한다',
   fighting: '주먹을 휘둘러 보지만 기술이 안 나와 민망해한다',
   rock: '돌덩이는 못 던진다며 눈만 깜빡인다',
+  poison: '독은 못 만든다며 고개를 젓는다',
+  ground: '땅을 파 보지만 아무 일도 일어나지 않아 머쓱해한다',
+  bug: '벌레 기술은 모른다며 더듬이 대신 귀만 쫑긋한다',
+  ghost: '유령 흉내를 내 보지만 기술은 안 나온다',
 };
+// 같은 속성인데 그 포켓몬이 배우지 않는 기술을 시켰을 때
+export const NOT_LEARNED_TEXT = '그 기술은 아직 배우지 않았다며 고개를 갸웃거린다';
 
-// 타입 상성 (대상이 포켓몬일 때 "효과는 굉장했다!" 판정용)
-export const SUPER = {
-  electric: ['water', 'flying'], fire: ['grass', 'ice', 'steel'], water: ['fire', 'rock'], grass: ['water', 'rock'],
-  ice: ['grass', 'flying', 'dragon'], fighting: ['normal', 'ice', 'dark', 'rock'], psychic: ['fighting'],
-  dark: ['psychic'], fairy: ['fighting', 'dark', 'dragon'], flying: ['grass', 'fighting'], rock: ['fire', 'ice', 'flying'],
+// 타입 상성 (대상이 포켓몬일 때 "효과는 굉장했다!" 판정용): 공격 속성 → { 방어 속성: 배율 } (적지 않은 것은 1배)
+const CHART = {
+  normal: { rock: 0.5, ghost: 0, steel: 0.5 },
+  fire: { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+  water: { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+  electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+  grass: { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
+  ice: { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+  fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
+  poison: { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+  ground: { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+  flying: { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+  psychic: { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+  bug: { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
+  rock: { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+  ghost: { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+  dragon: { dragon: 2, steel: 0.5, fairy: 0 },
+  dark: { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+  steel: { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+  fairy: { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 },
 };
-export const WEAK = {
-  electric: ['grass', 'electric'], fire: ['water', 'fire', 'rock'], water: ['grass', 'water'], grass: ['fire', 'grass', 'flying'],
-  ice: ['fire', 'water', 'ice'], fighting: ['psychic', 'fairy', 'flying'], psychic: ['psychic'],
-  dark: ['fighting', 'dark', 'fairy'], fairy: ['fire'], flying: ['electric', 'rock'], rock: ['fighting'],
-};
+/** 기술 속성이 상대 속성들(여럿이면 곱한다)에 주는 배율 */
+export const effectiveness = (moveType, types) => types.reduce((k, t) => k * (CHART[moveType]?.[t] ?? 1), 1);
 
 export const HIT_TEXT = ['효과는 굉장했다!', '급소에 맞았다!', '효과가 굉장했다!', '효과는 별로인 듯하다...', '명중!'];
+
+// ---- 공식 기술 전부 (movedex.mjs): 위의 다듬은 기술은 그대로 두고 나머지를 자동으로 만든다 ----
+// 포켓몬·행동·대상 등 다른 말과 겹치는 기술 이름은 별칭에서 뺀다
+addAllMoves(MOVES, [
+  ...Object.values(POKEMON).flatMap((p) => p.aliases), ...ALL_ALIASES, ...ATTACK_WORDS, ...Object.values(ACTIONS).flat(),
+  ...TARGET_ALIASES.flatMap((t) => t.keys), ...CURSOR_WORDS, ...ICON_HINT, ...WINDOW_HINT,
+].map(compact), compact);
